@@ -1,0 +1,22 @@
+{
+  "name": "FC Régny Matchday",
+  "short_name": "FC Régny",
+  "description": "Vue mobile du calendrier, des résultats et du widget matchday du FC Régny.",
+  "start_url": "/widget.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#08101d",
+  "theme_color": "#f28c1b",
+  "icons": [
+    {
+      "src": "/assets/logo-fc-regny.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/logo-fc-regny.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

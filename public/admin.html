@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>FC Régny - Administration</title>
+    <meta name="description" content="Administration sécurisée du widget FC Régny." />
+    <meta name="theme-color" content="#f28c1b" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body data-theme="dark">
+    <div class="page-shell">
+      <header class="topbar">
+        <div class="brand">
+          <img class="crest" src="/assets/logo-fc-regny.png" alt="Logo FC Régny" />
+          <div>
+            <p class="eyebrow">Administration sécurisée</p>
+            <h1>FC Régny Admin</h1>
+            <p class="lede">
+              Les mises à jour passent maintenant par le serveur partagé du club avec session sécurisée.
+            </p>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <div class="theme-switch" role="group" aria-label="Choix du thème">
+            <button class="theme-btn active" type="button" data-theme-option="dark">Sombre</button>
+            <button class="theme-btn" type="button" data-theme-option="light">Clair</button>
+          </div>
+          <a class="ghost-link" href="/">Retour au widget</a>
+        </div>
+      </header>
+
+      <main class="admin-layout">
+        <section class="panel auth-panel" id="authPanel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Connexion</p>
+              <h2>Déverrouiller l'administration</h2>
+            </div>
+          </div>
+          <p class="panel-copy">
+            Utilise un mot de passe administrateur configuré côté serveur. Le mot de passe n'est plus exposé dans le
+            navigateur.
+          </p>
+          <label class="field">
+            <span>Mot de passe admin</span>
+            <input id="passwordInput" type="password" autocomplete="current-password" placeholder="Mot de passe" />
+          </label>
+          <div class="actions">
+            <button class="btn" id="loginBtn" type="button">Connexion</button>
+          </div>
+          <p class="feedback error" id="authError"></p>
+        </section>
+
+        <section class="admin-stack hidden" id="adminPanel">
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Session</p>
+                <h2>Tableau de bord</h2>
+              </div>
+              <div class="actions">
+                <button class="btn secondary" id="reloadBtn" type="button">Recharger</button>
+                <button class="btn secondary" id="logoutBtn" type="button">Déconnexion</button>
+              </div>
+            </div>
+            <div class="season-summary">
+              <span class="mini-pill" id="adminSeasonLabel">Saison inconnue</span>
+              <span class="mini-pill" id="adminUpdatedLabel">MAJ inconnue</span>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Réglages rapides</p>
+                <h2>Identité club</h2>
+              </div>
+            </div>
+            <div class="grid two-col">
+              <label class="field">
+                <span>Nom affiché</span>
+                <input id="clubNameInput" type="text" />
+              </label>
+              <label class="field">
+                <span>Équipe suivie</span>
+                <input id="trackedTeamInput" type="text" />
+              </label>
+              <label class="field">
+                <span>Saison</span>
+                <input id="seasonLabelInput" type="text" />
+              </label>
+              <label class="field">
+                <span>Équipe</span>
+                <input id="seasonTeamInput" type="text" />
+              </label>
+              <label class="field">
+                <span>Compétition</span>
+                <input id="competitionInput" type="text" />
+              </label>
+              <label class="field">
+                <span>District</span>
+                <input id="districtInput" type="text" />
+              </label>
+              <label class="field">
+                <span>Lieu par défaut</span>
+                <input id="venueInput" type="text" />
+              </label>
+              <label class="field">
+                <span>Source affichée</span>
+                <input id="sourceInput" type="text" />
+              </label>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Résumé classement</p>
+                <h2>Chiffres clés</h2>
+              </div>
+            </div>
+            <div class="grid four-col">
+              <label class="field">
+                <span>Position</span>
+                <input id="rankInput" type="number" min="1" />
+              </label>
+              <label class="field">
+                <span>Points</span>
+                <input id="pointsInput" type="number" min="0" />
+              </label>
+              <label class="field">
+                <span>Matchs joués</span>
+                <input id="playedInput" type="number" min="0" />
+              </label>
+              <label class="field">
+                <span>Différence de buts</span>
+                <input id="goalDifferenceInput" type="number" />
+              </label>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Import assisté</p>
+                <h2>Coller les données FFF / SportCorico</h2>
+              </div>
+            </div>
+            <p class="panel-copy">
+              Colle une liste de résultats ou de calendrier. Les matchs reconnus sont fusionnés par identifiant.
+            </p>
+            <label class="field">
+              <span>Texte à analyser</span>
+              <textarea id="pasteInput" placeholder="Colle ici les matchs depuis FFF ou SportCorico"></textarea>
+            </label>
+            <div class="actions">
+              <button class="btn" id="parseBtn" type="button">Importer les matchs</button>
+              <button class="btn secondary" id="clearPasteBtn" type="button">Vider</button>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">JSON source</p>
+                <h2>Données complètes</h2>
+              </div>
+            </div>
+            <label class="field">
+              <span>Éditeur JSON</span>
+              <textarea id="jsonEditor" class="code-area"></textarea>
+            </label>
+            <div class="actions">
+              <button class="btn secondary" id="applyJsonBtn" type="button">Appliquer le JSON</button>
+              <button class="btn secondary" id="copyJsonBtn" type="button">Copier le JSON</button>
+              <button class="btn" id="saveBtn" type="button">Enregistrer sur le serveur</button>
+            </div>
+            <p class="feedback" id="saveFeedback"></p>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="/admin.js"></script>
+  </body>
+</html>

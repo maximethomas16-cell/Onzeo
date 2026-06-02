@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">FC Régny Widget</string>
+  <string name="widget_label">FC Régny</string>
+  <string name="widget_subtitle">Widget club Android</string>
+  <string name="widget_description">Widget Android FC Régny avec dernier match et prochain rendez-vous.</string>
+  <string name="widget_last_match">Dernier match</string>
+  <string name="widget_next_match">Prochain match</string>
+  <string name="widget_refresh">MAJ</string>
+  <string name="setup_description">Le widget Android est préconfiguré. Cette application affiche simplement le flux embarqué et permet un rafraîchissement manuel.</string>
+  <string name="endpoint_label">Flux embarqué dans l’application</string>
+  <string name="setup_help">Pour un build club, l’URL du widget est injectée à la compilation. Aucun champ n’est à remplir par les membres du club.</string>
+  <string name="refresh_button">Rafraîchir</string>
+  <string name="status_idle">Prêt à configurer le widget Android.</string>
+  <string name="status_saved">Configuration enregistrée. Mise à jour du widget en cours.</string>
+  <string name="status_invalid">Saisis une URL valide.</string>
+  <string name="status_error">Impossible de contacter le flux widget.</string>
+  <string name="status_placeholder">Renseigne ton URL de production avant installation club.</string>
+  <string name="status_embedded">Le widget est préconfiguré et prêt à être ajouté à l’écran d’accueil.</string>
+  <string name="widget_missing_next">Aucun prochain match saisi.</string>
+  <string name="widget_missing_last">Aucun résultat récent.</string>
+  <string name="widget_open_app">Ouvrir l’application</string>
+</resources>

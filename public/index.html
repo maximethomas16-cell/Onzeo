@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>FC Régny - Espace public</title>
+    <meta name="description" content="Calendrier, classement et forme récente du FC Régny." />
+    <meta name="theme-color" content="#f28c1b" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="stylesheet" href="/styles.css?v=public-simple-6" />
+  </head>
+  <body data-theme="dark">
+    <div class="page-shell public-shell">
+      <header class="topbar">
+        <div class="brand">
+          <img class="crest" src="/assets/logo-fc-regny.png" alt="Logo FC Régny" />
+          <div class="brand-copy compact-copy">
+            <p class="eyebrow">Espace public</p>
+            <h1>FC Régny</h1>
+            <p class="lede">Le calendrier, le classement et la dynamique récente du club en lecture simple.</p>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <div class="theme-switch" role="group" aria-label="Choix du thème">
+            <button class="theme-btn active" type="button" data-theme-option="dark">Sombre</button>
+            <button class="theme-btn" type="button" data-theme-option="light">Clair</button>
+          </div>
+        </div>
+      </header>
+
+      <main class="content-stack public-stack">
+        <nav class="tabs" aria-label="Navigation principale">
+          <button class="tab-btn active" data-tab="summary" type="button">Forme récente</button>
+          <button class="tab-btn" data-tab="calendar" type="button">Calendrier</button>
+          <button class="tab-btn" data-tab="standings" type="button">Classement</button>
+        </nav>
+
+        <section class="tab-panel active" id="tab-summary">
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Dynamique du club</p>
+                <h2 id="summaryTitle">Chargement...</h2>
+              </div>
+              <div class="pill-row" id="seasonPills"></div>
+            </div>
+            <div class="season-summary" id="seasonSummary"></div>
+            <section class="widget-subcard summary-card" id="lastMatchesBlock"></section>
+          </article>
+        </section>
+
+        <section class="tab-panel" id="tab-calendar">
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Saison</p>
+                <h2>Calendrier complet</h2>
+              </div>
+              <label class="inline-field">
+                <span>Filtre</span>
+                <select id="calendarFilter">
+                  <option value="all">Tous les matchs</option>
+                  <option value="league">Championnat</option>
+                  <option value="cup">Coupes</option>
+                  <option value="home">À domicile</option>
+                  <option value="away">À l'extérieur</option>
+                  <option value="future">À venir</option>
+                </select>
+              </label>
+            </div>
+            <div class="calendar-list-wrap" id="seasonCalendar"></div>
+          </article>
+        </section>
+
+        <section class="tab-panel" id="tab-standings">
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Compétition</p>
+                <h2>Classement général</h2>
+              </div>
+            </div>
+            <div id="standingsTable"></div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="/app.js?v=public-simple-7"></script>
+  </body>
+</html>
