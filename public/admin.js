@@ -1,8 +1,18 @@
-import { bindThemeButtons, clone, fetchJson, formatUpdatedAt, normalizeSeasonData, parsePastedText } from "./shared.js";
+import { bindThemeButtons, clone, formatUpdatedAt, normalizeSeasonData, parsePastedText } from "./shared.js";
+import {
+  getDataSourceStatus,
+  loadAdminSeasonData,
+  loginAdmin,
+  logoutAdmin,
+  restoreAdminSession,
+  saveAdminSeasonData,
+} from "./data-source.js";
 
 const els = {
   authPanel: document.getElementById("authPanel"),
   adminPanel: document.getElementById("adminPanel"),
+  authHint: document.getElementById("authHint"),
+  emailInput: document.getElementById("emailInput"),
   passwordInput: document.getElementById("passwordInput"),
   loginBtn: document.getElementById("loginBtn"),
   authError: document.getElementById("authError"),
@@ -10,6 +20,7 @@ const els = {
   logoutBtn: document.getElementById("logoutBtn"),
   adminSeasonLabel: document.getElementById("adminSeasonLabel"),
   adminUpdatedLabel: document.getElementById("adminUpdatedLabel"),
+  adminUserLabel: document.getElementById("adminUserLabel"),
   clubNameInput: document.getElementById("clubNameInput"),
   trackedTeamInput: document.getElementById("trackedTeamInput"),
   seasonLabelInput: document.getElementById("seasonLabelInput"),
@@ -34,6 +45,7 @@ const els = {
 };
 
 let state = normalizeSeasonData({});
+let currentUserEmail = "";
 
 function toast(message) {
   els.toast.textContent = message;
@@ -42,9 +54,24 @@ function toast(message) {
   toast.timer = window.setTimeout(() => els.toast.classList.remove("show"), 2600);
 }
 
-function setAuthenticated(authenticated) {
+function syncAuthState(authenticated) {
   els.authPanel.classList.toggle("hidden", authenticated);
   els.adminPanel.classList.toggle("hidden", !authenticated);
+  if (els.adminUserLabel) {
+    els.adminUserLabel.textContent = currentUserEmail ? `Connecte: ${currentUserEmail}` : "Session fermee";
+  }
+}
+
+function applyDataSourceHint() {
+  const status = getDataSourceStatus();
+  els.authHint.textContent = status.adminLabel;
+
+  if (!status.adminReady) {
+    els.emailInput.disabled = true;
+    els.passwordInput.disabled = true;
+    els.loginBtn.disabled = true;
+    els.authError.textContent = status.adminLabel;
+  }
 }
 
 function syncFormFromState() {
@@ -61,7 +88,7 @@ function syncFormFromState() {
   els.playedInput.value = state.summary.played ?? "";
   els.goalDifferenceInput.value = state.summary.goalDifference ?? "";
   els.adminSeasonLabel.textContent = `${state.season.team} · ${state.season.label}`;
-  els.adminUpdatedLabel.textContent = `Dernière MAJ: ${formatUpdatedAt(state.lastUpdated)}`;
+  els.adminUpdatedLabel.textContent = `Derniere MAJ: ${formatUpdatedAt(state.lastUpdated)}`;
   els.jsonEditor.value = JSON.stringify(state, null, 2);
 }
 
@@ -82,41 +109,37 @@ function syncStateFromForm() {
   state = normalizeSeasonData(state);
 }
 
-async function loadAdminData() {
-  const payload = await fetchJson("/api/admin/season", { method: "GET" });
-  state = normalizeSeasonData(payload.data);
+async function loadSeason() {
+  state = normalizeSeasonData(await loadAdminSeasonData());
   syncFormFromState();
 }
 
 async function login() {
   els.authError.textContent = "";
+
   try {
-    await fetchJson("/api/admin/login", {
-      method: "POST",
-      body: JSON.stringify({ password: els.passwordInput.value }),
-    });
+    const session = await loginAdmin(els.emailInput.value.trim(), els.passwordInput.value);
+    currentUserEmail = session?.user?.email || els.emailInput.value.trim();
     els.passwordInput.value = "";
-    setAuthenticated(true);
-    await loadAdminData();
-    toast("Administration déverrouillée.");
+    syncAuthState(true);
+    await loadSeason();
+    toast("Administration connectee.");
   } catch (error) {
     els.authError.textContent = error.message;
   }
 }
 
 async function logout() {
-  try {
-    await fetchJson("/api/admin/logout", { method: "POST", body: JSON.stringify({}) });
-  } finally {
-    setAuthenticated(false);
-    toast("Session fermée.");
-  }
+  await logoutAdmin();
+  currentUserEmail = "";
+  syncAuthState(false);
+  toast("Session fermee.");
 }
 
 function mergeImportedMatches() {
   const imported = parsePastedText(els.pasteInput.value);
   if (!imported.length) {
-    toast("Aucun match reconnu dans le texte collé.");
+    toast("Aucun match reconnu dans le texte colle.");
     return;
   }
 
@@ -127,7 +150,7 @@ function mergeImportedMatches() {
   state.club.sourceLabel = "Import texte FFF / SportCorico";
   state.lastUpdated = new Date().toISOString();
   syncFormFromState();
-  toast(`${imported.length} match(s) importé(s).`);
+  toast(`${imported.length} match(s) importe(s).`);
 }
 
 function applyJsonEditor() {
@@ -135,7 +158,7 @@ function applyJsonEditor() {
     state = normalizeSeasonData(JSON.parse(els.jsonEditor.value));
     state.lastUpdated = new Date().toISOString();
     syncFormFromState();
-    toast("JSON chargé dans l'éditeur.");
+    toast("JSON applique.");
   } catch (error) {
     toast(`JSON invalide: ${error.message}`);
   }
@@ -146,27 +169,34 @@ async function save() {
     syncStateFromForm();
     state = normalizeSeasonData(JSON.parse(els.jsonEditor.value || "{}"));
     state.lastUpdated = new Date().toISOString();
-    const payload = await fetchJson("/api/admin/season", {
-      method: "PUT",
-      body: JSON.stringify({ data: state }),
-    });
-    state = normalizeSeasonData(payload.data);
+    state = normalizeSeasonData(await saveAdminSeasonData(state));
     syncFormFromState();
-    els.saveFeedback.textContent = `Enregistré le ${formatUpdatedAt(state.lastUpdated)}.`;
-    toast("Données enregistrées sur le serveur.");
+    els.saveFeedback.textContent = `Enregistre le ${formatUpdatedAt(state.lastUpdated)}.`;
+    toast("Donnnees enregistrees.");
   } catch (error) {
     els.saveFeedback.textContent = error.message;
-    toast(`Échec de l'enregistrement: ${error.message}`);
+    toast(`Echec de l'enregistrement: ${error.message}`);
   }
 }
 
 async function restoreSession() {
+  applyDataSourceHint();
+
   try {
-    await fetchJson("/api/admin/session", { method: "GET" });
-    setAuthenticated(true);
-    await loadAdminData();
-  } catch {
-    setAuthenticated(false);
+    const session = await restoreAdminSession();
+    if (!session?.user?.email) {
+      currentUserEmail = "";
+      syncAuthState(false);
+      return;
+    }
+
+    currentUserEmail = session.user.email;
+    syncAuthState(true);
+    await loadSeason();
+  } catch (error) {
+    currentUserEmail = "";
+    syncAuthState(false);
+    els.authError.textContent = error.message;
   }
 }
 
@@ -176,19 +206,19 @@ els.passwordInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") login();
 });
 els.reloadBtn.addEventListener("click", async () => {
-  await loadAdminData();
-  toast("Données rechargées depuis le serveur.");
+  await loadSeason();
+  toast("Donnees rechargees.");
 });
 els.logoutBtn.addEventListener("click", logout);
 els.parseBtn.addEventListener("click", mergeImportedMatches);
 els.clearPasteBtn.addEventListener("click", () => {
   els.pasteInput.value = "";
-  toast("Zone de collage vidée.");
+  toast("Zone de collage videe.");
 });
 els.applyJsonBtn.addEventListener("click", applyJsonEditor);
 els.copyJsonBtn.addEventListener("click", async () => {
   await navigator.clipboard.writeText(els.jsonEditor.value);
-  toast("JSON copié.");
+  toast("JSON copie.");
 });
 els.saveBtn.addEventListener("click", save);
 

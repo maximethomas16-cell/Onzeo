@@ -7,6 +7,7 @@
     "node": "20.x"
   },
   "scripts": {
+    "build:static": "node scripts/build_static_site.js",
     "serve": "node server.js",
     "start": "node server.js",
     "check": "node scripts/validate_project.js",

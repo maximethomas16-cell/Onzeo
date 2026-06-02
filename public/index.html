@@ -3,25 +3,25 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>FC Régny - Espace public</title>
-    <meta name="description" content="Calendrier, classement et forme récente du FC Régny." />
+    <title>FC Regny - Espace public</title>
+    <meta name="description" content="Calendrier, classement et forme recente du FC Regny." />
     <meta name="theme-color" content="#f28c1b" />
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=public-simple-6" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="stylesheet" href="./styles.css?v=free-static-1" />
   </head>
   <body data-theme="dark">
     <div class="page-shell public-shell">
       <header class="topbar">
         <div class="brand">
-          <img class="crest" src="/assets/logo-fc-regny.png" alt="Logo FC Régny" />
+          <img class="crest" src="./assets/logo-fc-regny.png" alt="Logo FC Regny" />
           <div class="brand-copy compact-copy">
             <p class="eyebrow">Espace public</p>
-            <h1>FC Régny</h1>
-            <p class="lede">Le calendrier, le classement et la dynamique récente du club en lecture simple.</p>
+            <h1>FC Regny</h1>
+            <p class="lede">Le calendrier, le classement et la dynamique recente du club en lecture simple.</p>
           </div>
         </div>
         <div class="topbar-actions">
-          <div class="theme-switch" role="group" aria-label="Choix du thème">
+          <div class="theme-switch" role="group" aria-label="Choix du theme">
             <button class="theme-btn active" type="button" data-theme-option="dark">Sombre</button>
             <button class="theme-btn" type="button" data-theme-option="light">Clair</button>
           </div>
@@ -30,7 +30,7 @@
 
       <main class="content-stack public-stack">
         <nav class="tabs" aria-label="Navigation principale">
-          <button class="tab-btn active" data-tab="summary" type="button">Forme récente</button>
+          <button class="tab-btn active" data-tab="summary" type="button">Forme recente</button>
           <button class="tab-btn" data-tab="calendar" type="button">Calendrier</button>
           <button class="tab-btn" data-tab="standings" type="button">Classement</button>
         </nav>
@@ -62,9 +62,9 @@
                   <option value="all">Tous les matchs</option>
                   <option value="league">Championnat</option>
                   <option value="cup">Coupes</option>
-                  <option value="home">À domicile</option>
-                  <option value="away">À l'extérieur</option>
-                  <option value="future">À venir</option>
+                  <option value="home">A domicile</option>
+                  <option value="away">A l'exterieur</option>
+                  <option value="future">A venir</option>
                 </select>
               </label>
             </div>
@@ -76,8 +76,8 @@
           <article class="panel">
             <div class="panel-head">
               <div>
-                <p class="eyebrow">Compétition</p>
-                <h2>Classement général</h2>
+                <p class="eyebrow">Competition</p>
+                <h2>Classement general</h2>
               </div>
             </div>
             <div id="standingsTable"></div>
@@ -87,6 +87,6 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script type="module" src="/app.js?v=public-simple-7"></script>
+    <script type="module" src="./app.js?v=free-static-1"></script>
   </body>
 </html>

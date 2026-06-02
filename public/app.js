@@ -2,7 +2,6 @@ import {
   bindThemeButtons,
   computeSeasonStats,
   escapeHtml,
-  fetchJson,
   findTeamStanding,
   formatShortDate,
   isFinished,
@@ -12,6 +11,7 @@ import {
   normalizeTeamName,
   resultFor,
 } from "./shared.js";
+import { getDataSourceStatus, loadPublicSeasonData } from "./data-source.js";
 
 const els = {
   lastMatchesBlock: document.getElementById("lastMatchesBlock"),
@@ -264,8 +264,7 @@ function setTab(name) {
 }
 
 async function loadPublicData() {
-  const payload = await fetchJson("/api/public/season", { method: "GET" });
-  state = normalizeSeasonData(payload.data);
+  state = normalizeSeasonData(await loadPublicSeasonData());
   render();
 }
 
@@ -281,11 +280,15 @@ bindThemeButtons();
 els.tabButtons.forEach((button) => button.addEventListener("click", () => setTab(button.dataset.tab)));
 els.calendarFilter.addEventListener("change", renderCalendar);
 setTab(activeTab);
+const dataSourceStatus = getDataSourceStatus();
+if (dataSourceStatus.provider === "local") {
+  toast("Mode demo actif. Configure Supabase pour la version club en ligne.");
+}
 refresh();
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {
       // Ignore service worker registration failures in local preview.
     });
   });

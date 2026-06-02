@@ -1,14 +1,19 @@
-const CACHE_NAME = "fc-regny-shell-v10";
+const CACHE_NAME = "fc-regny-shell-v11";
 const APP_SHELL = [
-  "/",
-  "/index.html",
-  "/widget.html",
-  "/styles.css?v=public-simple-6",
-  "/styles.css?v=widget-ready-2",
-  "/app.js?v=public-simple-7",
-  "/widget.js?v=widget-ready-2",
-  "/shared.js",
-  "/assets/logo-fc-regny.png",
+  "./",
+  "./index.html",
+  "./admin.html",
+  "./widget.html",
+  "./styles.css?v=free-static-1",
+  "./app.js?v=free-static-1",
+  "./admin.js?v=free-static-1",
+  "./widget.js?v=free-static-1",
+  "./shared.js",
+  "./data-source.js",
+  "./config.js",
+  "./manifest.webmanifest",
+  "./assets/logo-fc-regny.png",
+  "./data/season.json",
 ];
 
 self.addEventListener("install", (event) => {
@@ -31,7 +36,10 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
 
   const url = new URL(request.url);
-  if (url.pathname.startsWith("/api/public/")) {
+  if (url.origin !== self.location.origin) return;
+
+  const isFreshData = url.pathname.endsWith("/data/season.json") || url.pathname.endsWith("/config.js");
+  if (isFreshData) {
     event.respondWith(
       fetch(request)
         .then((response) => {

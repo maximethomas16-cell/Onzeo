@@ -4,16 +4,22 @@ const path = require("node:path");
 const root = path.resolve(__dirname, "..");
 
 const requiredFiles = [
-  "server.js",
   "public/index.html",
   "public/admin.html",
   "public/app.js",
   "public/admin.js",
+  "public/widget.js",
   "public/shared.js",
+  "public/data-source.js",
+  "public/config.js",
   "public/styles.css",
   "public/assets/logo-fc-regny.png",
+  "public/sw.js",
+  "public/manifest.webmanifest",
   "data/season.json",
+  "scripts/build_static_site.js",
   "scripts/generate_password_hash.js",
+  "docs/SUPABASE_SETUP.md",
 ];
 
 const checks = [];
@@ -24,22 +30,24 @@ function check(name, condition, hint = "") {
 
 for (const relativePath of requiredFiles) {
   const fullPath = path.join(root, relativePath);
-  check(`${relativePath} existe`, fs.existsSync(fullPath), `Créer ${relativePath}`);
+  check(`${relativePath} existe`, fs.existsSync(fullPath), `Creer ${relativePath}`);
 }
 
 const publicIndex = fs.readFileSync(path.join(root, "public/index.html"), "utf8");
 const publicAdmin = fs.readFileSync(path.join(root, "public/admin.html"), "utf8");
 const publicApp = fs.readFileSync(path.join(root, "public/app.js"), "utf8");
-const sharedJs = fs.readFileSync(path.join(root, "public/shared.js"), "utf8");
-const serverJs = fs.readFileSync(path.join(root, "server.js"), "utf8");
+const adminJs = fs.readFileSync(path.join(root, "public/admin.js"), "utf8");
+const dataSourceJs = fs.readFileSync(path.join(root, "public/data-source.js"), "utf8");
+const manifest = fs.readFileSync(path.join(root, "public/manifest.webmanifest"), "utf8");
+const swJs = fs.readFileSync(path.join(root, "public/sw.js"), "utf8");
 const seasonRaw = fs.readFileSync(path.join(root, "data/season.json"), "utf8");
 
-check("le widget public appelle l'API publique", publicIndex.includes('/app.js') && publicApp.includes("/api/public/season"));
-check("la page admin existe séparément", publicAdmin.includes("Administration sécurisée"));
-check("aucun mot de passe en clair n'est exposé dans le public", !/Maxx42630!|ADMIN_PASSWORD\s*=/.test(publicIndex + publicAdmin + sharedJs));
-check("server.js utilise un secret de session", serverJs.includes("SESSION_SECRET"));
-check("server.js utilise un hash de mot de passe admin", serverJs.includes("ADMIN_PASSWORD_HASH"));
-check("server.js protège une API admin", serverJs.includes("/api/admin/season"));
+check("le widget public charge la source cliente", publicApp.includes("loadPublicSeasonData"));
+check("la page admin utilise Supabase ou la source statique", adminJs.includes("loginAdmin") && dataSourceJs.includes("supabase"));
+check("la page admin existe separement", publicAdmin.includes("FC Regny Admin"));
+check("aucun mot de passe en clair n'est expose dans le public", !/Maxx42630!|ClubTest123!|ADMIN_PASSWORD\s*=/.test(publicIndex + publicAdmin + adminJs + dataSourceJs));
+check("le manifest utilise des chemins relatifs", manifest.includes('"./widget.html"') && manifest.includes('"./assets/logo-fc-regny.png"'));
+check("le service worker precache le shell gratuit", swJs.includes("dist-static") === false && swJs.includes("data-source.js"));
 
 let season;
 try {
@@ -57,7 +65,7 @@ if (season) {
 
 const failed = checks.filter((entry) => !entry.ok);
 
-console.log("Validation FC Régny Widget");
+console.log("Validation FC Regny Widget");
 console.log("==========================");
 for (const entry of checks) {
   console.log(`[${entry.ok ? "OK" : "ERREUR"}] ${entry.name}`);
@@ -65,8 +73,8 @@ for (const entry of checks) {
 }
 
 if (failed.length) {
-  console.log(`\n${failed.length} vérification(s) en erreur.`);
+  console.log(`\n${failed.length} verification(s) en erreur.`);
   process.exit(1);
 }
 
-console.log("\nToutes les vérifications sont OK.");
+console.log("\nToutes les verifications sont OK.");

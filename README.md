@@ -1,144 +1,71 @@
-# FC Régny - Widget public + admin sécurisée
+# FC Regny - version gratuite
 
-Projet web pour diffuser à tout le club:
+Version statique du projet pour diffuser au club:
 
-- un **widget public** en lecture seule pour joueurs, coachs et membres ;
-- une **administration sécurisée côté serveur** pour mettre à jour les données partagées.
+- un espace public en lecture seule
+- une administration en ligne via Supabase
+- un widget web compact pour mobile
 
-Version actuelle : **V2.0**
+## Architecture
 
-## Ce qui change par rapport à l'ancienne version
+- `public/` : site statique a publier
+- `data/season.json` : jeu de donnees de base et fallback local
+- `public/data-source.js` : couche d'acces aux donnees
+- `public/config.js` : choix du provider `local` ou `supabase`
+- `scripts/build_static_site.js` : genere `dist-static/`
 
-L'ancienne admin était protégée uniquement dans le navigateur, avec un mot de passe visible dans le code source.  
-Cette version corrige ce point:
+## Modes disponibles
 
-- le widget public ne contient plus d'outils admin ;
-- le mot de passe admin n'est plus embarqué dans le front ;
-- les mises à jour passent par une API serveur avec session HTTP-only ;
-- les données sont partagées dans `data/season.json` pour tous les utilisateurs.
+### 1. Mode local demo
 
-## Structure
+Par defaut, `public/config.js` pointe sur:
 
-```txt
-fc-regny-widget-codex/
-├─ data/
-│  └─ season.json
-├─ docs/
-├─ public/
-│  ├─ index.html
-│  ├─ admin.html
-│  ├─ app.js
-│  ├─ admin.js
-│  ├─ shared.js
-│  ├─ styles.css
-│  └─ assets/
-│     └─ logo-fc-regny.png
-├─ scripts/
-│  ├─ generate_password_hash.js
-│  └─ validate_project.js
-├─ server.js
-└─ package.json
-```
+- `provider: "local"`
+- `seasonFile: "./data/season.json"`
 
-## Lancer le projet
+Ce mode permet de visualiser le site sans backend, mais l'admin en ligne reste desactivee.
+
+### 2. Mode club gratuit
+
+Pour la vraie version gratuite:
+
+- hebergement statique
+- Supabase pour l'admin et la source centrale
+
+Le setup complet est documente dans [docs/SUPABASE_SETUP.md](/C:/Users/maxim/Desktop/fc-regny-widget-codex/docs/SUPABASE_SETUP.md).
+
+## Lancer en local
 
 ```bash
 npm run serve
 ```
 
-Le serveur écoute par défaut sur `http://localhost:4173`.
+Le serveur Node reste utile pour la previsualisation locale, mais il n'est plus obligatoire pour la production gratuite.
 
-## Configuration admin
-
-Pour un usage local simple, tu peux lancer avec un mot de passe temporaire:
+## Generer le site statique
 
 ```bash
-$env:ADMIN_PASSWORD="mot-de-passe-local"
-npm run serve
+npm run build:static
 ```
 
-Pour un vrai déploiement, il faut utiliser un **hash** et un **secret de session**.
+Le site pret a publier est genere dans `dist-static/`.
 
-### 1. Générer le hash du mot de passe
-
-```bash
-node scripts/generate_password_hash.js "TonMotDePasseFort"
-```
-
-### 2. Définir les variables d'environnement
-
-Variables recommandées en production:
-
-```txt
-PORT=4173
-APP_ORIGIN=https://widget.fc-regny.fr
-SESSION_SECRET=une-cle-secrete-longue-et-aleatoire
-ADMIN_PASSWORD_HASH=scrypt$...
-COOKIE_SECURE=true
-NODE_ENV=production
-DATA_DIR=./data
-```
-
-## Déployer sur Render
-
-Le dépôt contient maintenant un `render.yaml` prêt pour Render.
-
-Points importants:
-
-- le service est prévu en `starter`, pas en gratuit ;
-- Render utilise un système de fichiers éphémère par défaut ;
-- comme l'admin écrit dans `season.json`, il faut un **persistent disk** pour conserver les mises à jour du club ;
-- le service expose aussi `GET /healthz` pour le health check Render.
-
-Variables Render prévues dans `render.yaml`:
-
-- `SESSION_SECRET` : généré automatiquement par Render ;
-- `ADMIN_PASSWORD_HASH` : à renseigner dans le dashboard ;
-- `DATA_DIR=/var/data/fc-regny` : stockage persistant des données admin.
-
-Une fois le service en ligne, l'URL publique Render pourra servir:
-
-- le site public ;
-- l'admin ;
-- le flux Android `GET /api/public/widget`.
-
-## Vérifier le projet
+## Validation
 
 ```bash
 npm run check
 ```
 
-Le script valide:
+## Deploiement
 
-- la présence des fichiers attendus ;
-- la séparation public/admin ;
-- l'absence de mot de passe en clair côté front ;
-- la présence de la protection serveur ;
-- la validité du JSON partagé.
+Un workflow GitHub Pages est fourni dans `.github/workflows/deploy-pages.yml`.
 
-## Endpoints
+Attention:
 
-- `GET /api/public/season` : données publiques du widget
-- `POST /api/admin/login` : connexion admin
-- `POST /api/admin/logout` : déconnexion admin
-- `GET /api/admin/session` : état de session
-- `GET /api/admin/season` : lecture admin
-- `PUT /api/admin/season` : écriture admin
+- GitHub Pages sur repo prive depend du plan GitHub
+- si tu veux rester en prive sans payer, prefere Cloudflare Pages
 
-## Sécurité
+## Android
 
-Cette version apporte:
-
-- cookie de session `HttpOnly` ;
-- `SameSite=Strict` ;
-- CSP et en-têtes de sécurité ;
-- validation serveur des données ;
-- limitation basique des tentatives de connexion ;
-- séparation stricte entre page publique et page admin ;
-- sauvegarde de secours dans `data/backups/` à chaque mise à jour.
-
-## Limites à connaître
-
-- Le stockage reste **fichier**. C'est très bien pour un petit déploiement club, mais moins adapté si plusieurs admins modifient en même temps.
-- Il faut absolument déployer derrière **HTTPS**.
-- Pour plusieurs rôles fins (coach, staff, super-admin), il faudra ensuite ajouter une vraie gestion d'utilisateurs.
+Le widget Android natif existe toujours dans `android-widget-app/`.
+La prochaine etape logique consiste a le rebrancher sur la source gratuite finale une fois l'URL publique choisie.

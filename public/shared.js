@@ -5,7 +5,7 @@ const DEFAULT_DATA = {
     trackedTeam: "REGNY FC",
     defaultVenue: "Rue du Collège, 42630 Régny",
     sourceLabel: "FFF / SportCorico",
-    logoPath: "/assets/logo-fc-regny.png",
+    logoPath: "./assets/logo-fc-regny.png",
   },
   season: {
     label: "2025/2026",
@@ -303,6 +303,139 @@ export function monthKey(iso) {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "Date inconnue";
   return new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(date);
+}
+
+export function getNextMatch(matches) {
+  const now = Date.now();
+  return [...matches].sort(matchSort).find((match) => !isFinished(match) && new Date(match.date).getTime() >= now);
+}
+
+export function getLastFinishedMatch(matches) {
+  return [...matches]
+    .filter(isFinished)
+    .sort((left, right) => new Date(right.date).getTime() - new Date(left.date).getTime())[0];
+}
+
+export function formatWidgetDate(iso) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "--/--";
+  return new Intl.DateTimeFormat("fr-FR", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+  })
+    .format(date)
+    .replace(/\.$/, "");
+}
+
+export function formatWidgetTime(iso) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "--:--";
+  return new Intl.DateTimeFormat("fr-FR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function formatWidgetDateLong(iso) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "Date a confirmer";
+  return new Intl.DateTimeFormat("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(date);
+}
+
+function buildWidgetTeam(standingsTable, trackedTeam, teamName, score) {
+  const standing = findTeamStanding(standingsTable, teamName);
+  return {
+    name: teamName,
+    rank: standing?.rank ?? null,
+    points: standing?.points ?? null,
+    tracked: teamSimilarityScore(teamName, trackedTeam) >= 12,
+    score,
+  };
+}
+
+export function buildWidgetMatchCard(match, seasonData, title) {
+  if (!match) return null;
+
+  const homeTeam = buildWidgetTeam(seasonData.standingsTable, seasonData.club.trackedTeam, match.homeTeam, match.homeScore);
+  const awayTeam = buildWidgetTeam(seasonData.standingsTable, seasonData.club.trackedTeam, match.awayTeam, match.awayScore);
+  const venue = match.venue || seasonData.club.defaultVenue || "Lieu a confirmer";
+  const finished = isFinished(match);
+
+  return {
+    title,
+    competition: match.competition || seasonData.season.competition,
+    round: match.round || "",
+    venue,
+    venueShort: venue,
+    kickoffIso: match.date,
+    kickoffDateLabel: formatWidgetDate(match.date),
+    kickoffDateLongLabel: formatWidgetDateLong(match.date),
+    kickoffTimeLabel: formatWidgetTime(match.date),
+    status: match.status,
+    scoreLine: finished ? `${match.homeScore ?? "-"} - ${match.awayScore ?? "-"}` : "Match a venir",
+    homeTeam,
+    awayTeam,
+    trackedSide: homeTeam.tracked ? "home" : awayTeam.tracked ? "away" : "neutral",
+    isFinished: finished,
+    sourceLastUpdated: seasonData.lastUpdated,
+  };
+}
+
+export function buildWidgetPayloadV2(seasonData) {
+  const nextMatch = getNextMatch(seasonData.matches);
+  const lastMatch = getLastFinishedMatch(seasonData.matches);
+
+  if (!nextMatch && !lastMatch) {
+    return {
+      widgetVersion: 2,
+      generatedAt: new Date().toISOString(),
+      refreshAfterSeconds: 1800,
+      mode: "empty",
+      club: {
+        name: seasonData.club.name,
+        logoPath: seasonData.club.logoPath,
+      },
+      season: {
+        label: seasonData.season.label,
+        team: seasonData.season.team,
+      },
+      lastMatch: null,
+      nextMatch: null,
+      deepLinks: {
+        app: "./index.html",
+        widget: "./widget.html",
+      },
+    };
+  }
+
+  return {
+    widgetVersion: 2,
+    generatedAt: new Date().toISOString(),
+    refreshAfterSeconds: 1800,
+    mode: "split",
+    club: {
+      name: seasonData.club.name,
+      fullName: seasonData.club.fullName,
+      logoPath: seasonData.club.logoPath,
+      trackedTeam: seasonData.club.trackedTeam,
+    },
+    season: {
+      label: seasonData.season.label,
+      team: seasonData.season.team,
+      competition: seasonData.season.competition,
+    },
+    lastMatch: buildWidgetMatchCard(lastMatch, seasonData, "Dernier match"),
+    nextMatch: buildWidgetMatchCard(nextMatch, seasonData, "Prochain match"),
+    deepLinks: {
+      app: "./index.html",
+      widget: "./widget.html",
+    },
+  };
 }
 
 export async function fetchJson(url, options = {}) {

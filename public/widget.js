@@ -1,4 +1,5 @@
-import { escapeHtml, fetchJson } from "./shared.js";
+import { buildWidgetPayloadV2, escapeHtml } from "./shared.js";
+import { loadPublicSeasonData } from "./data-source.js";
 
 const el = document.getElementById("widgetStandalone");
 
@@ -10,8 +11,8 @@ function renderEmpty(data) {
   el.innerHTML = `
     <div class="widget-mini-head">
       <div>
-        <p class="eyebrow">Widget écran d'accueil</p>
-        <h2 class="widget-mini-title">${escapeHtml(data.club?.name || "FC Régny")}</h2>
+        <p class="eyebrow">Widget ecran d'accueil</p>
+        <h2 class="widget-mini-title">${escapeHtml(data.club?.name || "FC Regny")}</h2>
       </div>
       <span class="phone-badge">En attente</span>
     </div>
@@ -23,8 +24,8 @@ function renderTeamsLine(card, showScore) {
   return `
     <div class="widget-inline-match">
       <span>${escapeHtml(card.homeTeam?.name || "Domicile")} <span class="calendar-rank">${escapeHtml(formatRank(card.homeTeam?.rank))}</span></span>
-      <strong>${escapeHtml(showScore ? card.scoreLine || "—" : "vs")}</strong>
-      <span>${escapeHtml(card.awayTeam?.name || "Extérieur")} <span class="calendar-rank">${escapeHtml(formatRank(card.awayTeam?.rank))}</span></span>
+      <strong>${escapeHtml(showScore ? card.scoreLine || "-" : "vs")}</strong>
+      <span>${escapeHtml(card.awayTeam?.name || "Exterieur")} <span class="calendar-rank">${escapeHtml(formatRank(card.awayTeam?.rank))}</span></span>
     </div>
   `;
 }
@@ -36,7 +37,7 @@ function renderLastMatch(card) {
         <div class="widget-split-head">
           <p class="eyebrow">Dernier match</p>
         </div>
-        <p class="widget-mini-copy">Aucun résultat récent disponible.</p>
+        <p class="widget-mini-copy">Aucun resultat recent disponible.</p>
       </section>
     `;
   }
@@ -73,8 +74,8 @@ function renderNextMatch(card) {
       </div>
       <div class="widget-mini-meta">
         <strong>${escapeHtml(card.kickoffTimeLabel || "--:--")}</strong>
-        <span>•</span>
-        <span>${escapeHtml(card.venue || "Lieu à confirmer")}</span>
+        <span>-</span>
+        <span>${escapeHtml(card.venue || "Lieu a confirmer")}</span>
       </div>
       ${renderTeamsLine(card, false)}
       <p class="widget-mini-copy">${escapeHtml(card.competition || "")}</p>
@@ -92,7 +93,7 @@ function renderWidget(data) {
     <div class="widget-mini-head">
       <div>
         <p class="eyebrow">Widget Android ready</p>
-        <h1 class="widget-mini-title">${escapeHtml(data.club?.name || "FC Régny")}</h1>
+        <h1 class="widget-mini-title">${escapeHtml(data.club?.name || "FC Regny")}</h1>
       </div>
       <span class="phone-badge">${escapeHtml(data.season?.team || "Seniors 1")}</span>
     </div>
@@ -104,25 +105,25 @@ function renderWidget(data) {
 }
 
 async function init() {
-  const payload = await fetchJson("/api/public/widget", { method: "GET" });
-  renderWidget(payload.data);
+  const seasonData = await loadPublicSeasonData();
+  renderWidget(buildWidgetPayloadV2(seasonData));
 }
 
 init().catch(() => {
   el.innerHTML = `
     <div class="widget-mini-head">
       <div>
-        <p class="eyebrow">Widget écran d'accueil</p>
+        <p class="eyebrow">Widget ecran d'accueil</p>
         <h2 class="widget-mini-title">Indisponible</h2>
       </div>
     </div>
-    <p class="widget-mini-copy">Impossible de charger les données du widget pour le moment.</p>
+    <p class="widget-mini-copy">Impossible de charger les donnees du widget pour le moment.</p>
   `;
 });
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {
       // Ignore service worker registration failures in local preview.
     });
   });

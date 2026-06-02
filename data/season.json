@@ -5,7 +5,7 @@
     "trackedTeam": "REGNY FC",
     "defaultVenue": "Rue du Collège, 42630 Régny",
     "sourceLabel": "FFF / SportCorico",
-    "logoPath": "/assets/logo-fc-regny.png"
+    "logoPath": "./assets/logo-fc-regny.png"
   },
   "season": {
     "label": "2025/2026",

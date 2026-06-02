@@ -3,30 +3,28 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>FC Régny - Administration</title>
-    <meta name="description" content="Administration sécurisée du widget FC Régny." />
+    <title>FC Regny - Administration</title>
+    <meta name="description" content="Administration securisee du widget FC Regny." />
     <meta name="theme-color" content="#f28c1b" />
-    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=free-static-1" />
   </head>
   <body data-theme="dark">
     <div class="page-shell">
       <header class="topbar">
         <div class="brand">
-          <img class="crest" src="/assets/logo-fc-regny.png" alt="Logo FC Régny" />
+          <img class="crest" src="./assets/logo-fc-regny.png" alt="Logo FC Regny" />
           <div>
-            <p class="eyebrow">Administration sécurisée</p>
-            <h1>FC Régny Admin</h1>
-            <p class="lede">
-              Les mises à jour passent maintenant par le serveur partagé du club avec session sécurisée.
-            </p>
+            <p class="eyebrow">Administration securisee</p>
+            <h1>FC Regny Admin</h1>
+            <p class="lede">Version gratuite: lecture publique statique et ecriture admin via Supabase.</p>
           </div>
         </div>
         <div class="topbar-actions">
-          <div class="theme-switch" role="group" aria-label="Choix du thème">
+          <div class="theme-switch" role="group" aria-label="Choix du theme">
             <button class="theme-btn active" type="button" data-theme-option="dark">Sombre</button>
             <button class="theme-btn" type="button" data-theme-option="light">Clair</button>
           </div>
-          <a class="ghost-link" href="/">Retour au widget</a>
+          <a class="ghost-link" href="./index.html">Retour au widget</a>
         </div>
       </header>
 
@@ -35,15 +33,16 @@
           <div class="panel-head">
             <div>
               <p class="eyebrow">Connexion</p>
-              <h2>Déverrouiller l'administration</h2>
+              <h2>Ouvrir la session admin</h2>
             </div>
           </div>
-          <p class="panel-copy">
-            Utilise un mot de passe administrateur configuré côté serveur. Le mot de passe n'est plus exposé dans le
-            navigateur.
-          </p>
+          <p class="panel-copy" id="authHint"></p>
           <label class="field">
-            <span>Mot de passe admin</span>
+            <span>Email admin</span>
+            <input id="emailInput" type="email" autocomplete="username" placeholder="admin@club.fr" />
+          </label>
+          <label class="field">
+            <span>Mot de passe</span>
             <input id="passwordInput" type="password" autocomplete="current-password" placeholder="Mot de passe" />
           </label>
           <div class="actions">
@@ -61,29 +60,30 @@
               </div>
               <div class="actions">
                 <button class="btn secondary" id="reloadBtn" type="button">Recharger</button>
-                <button class="btn secondary" id="logoutBtn" type="button">Déconnexion</button>
+                <button class="btn secondary" id="logoutBtn" type="button">Deconnexion</button>
               </div>
             </div>
             <div class="season-summary">
               <span class="mini-pill" id="adminSeasonLabel">Saison inconnue</span>
               <span class="mini-pill" id="adminUpdatedLabel">MAJ inconnue</span>
+              <span class="mini-pill" id="adminUserLabel">Session fermee</span>
             </div>
           </article>
 
           <article class="panel">
             <div class="panel-head">
               <div>
-                <p class="eyebrow">Réglages rapides</p>
-                <h2>Identité club</h2>
+                <p class="eyebrow">Reglages rapides</p>
+                <h2>Identite club</h2>
               </div>
             </div>
             <div class="grid two-col">
               <label class="field">
-                <span>Nom affiché</span>
+                <span>Nom affiche</span>
                 <input id="clubNameInput" type="text" />
               </label>
               <label class="field">
-                <span>Équipe suivie</span>
+                <span>Equipe suivie</span>
                 <input id="trackedTeamInput" type="text" />
               </label>
               <label class="field">
@@ -91,11 +91,11 @@
                 <input id="seasonLabelInput" type="text" />
               </label>
               <label class="field">
-                <span>Équipe</span>
+                <span>Equipe</span>
                 <input id="seasonTeamInput" type="text" />
               </label>
               <label class="field">
-                <span>Compétition</span>
+                <span>Competition</span>
                 <input id="competitionInput" type="text" />
               </label>
               <label class="field">
@@ -103,11 +103,11 @@
                 <input id="districtInput" type="text" />
               </label>
               <label class="field">
-                <span>Lieu par défaut</span>
+                <span>Lieu par defaut</span>
                 <input id="venueInput" type="text" />
               </label>
               <label class="field">
-                <span>Source affichée</span>
+                <span>Source affichee</span>
                 <input id="sourceInput" type="text" />
               </label>
             </div>
@@ -116,8 +116,8 @@
           <article class="panel">
             <div class="panel-head">
               <div>
-                <p class="eyebrow">Résumé classement</p>
-                <h2>Chiffres clés</h2>
+                <p class="eyebrow">Resume classement</p>
+                <h2>Chiffres cles</h2>
               </div>
             </div>
             <div class="grid four-col">
@@ -130,11 +130,11 @@
                 <input id="pointsInput" type="number" min="0" />
               </label>
               <label class="field">
-                <span>Matchs joués</span>
+                <span>Matchs joues</span>
                 <input id="playedInput" type="number" min="0" />
               </label>
               <label class="field">
-                <span>Différence de buts</span>
+                <span>Difference de buts</span>
                 <input id="goalDifferenceInput" type="number" />
               </label>
             </div>
@@ -143,15 +143,13 @@
           <article class="panel">
             <div class="panel-head">
               <div>
-                <p class="eyebrow">Import assisté</p>
-                <h2>Coller les données FFF / SportCorico</h2>
+                <p class="eyebrow">Import assiste</p>
+                <h2>Coller les donnees FFF / SportCorico</h2>
               </div>
             </div>
-            <p class="panel-copy">
-              Colle une liste de résultats ou de calendrier. Les matchs reconnus sont fusionnés par identifiant.
-            </p>
+            <p class="panel-copy">Colle une liste de resultats ou de calendrier. Les matchs reconnus sont fusionnes par identifiant.</p>
             <label class="field">
-              <span>Texte à analyser</span>
+              <span>Texte a analyser</span>
               <textarea id="pasteInput" placeholder="Colle ici les matchs depuis FFF ou SportCorico"></textarea>
             </label>
             <div class="actions">
@@ -164,17 +162,17 @@
             <div class="panel-head">
               <div>
                 <p class="eyebrow">JSON source</p>
-                <h2>Données complètes</h2>
+                <h2>Donnees completes</h2>
               </div>
             </div>
             <label class="field">
-              <span>Éditeur JSON</span>
+              <span>Editeur JSON</span>
               <textarea id="jsonEditor" class="code-area"></textarea>
             </label>
             <div class="actions">
               <button class="btn secondary" id="applyJsonBtn" type="button">Appliquer le JSON</button>
               <button class="btn secondary" id="copyJsonBtn" type="button">Copier le JSON</button>
-              <button class="btn" id="saveBtn" type="button">Enregistrer sur le serveur</button>
+              <button class="btn" id="saveBtn" type="button">Enregistrer en ligne</button>
             </div>
             <p class="feedback" id="saveFeedback"></p>
           </article>
@@ -183,6 +181,6 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script type="module" src="/admin.js"></script>
+    <script type="module" src="./admin.js?v=free-static-1"></script>
   </body>
 </html>

@@ -784,6 +784,16 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (pathname === "/data/season.json") {
+      res.writeHead(200, staticHeaders(contentTypeFor(DATA_FILE), true));
+      if (req.method === "HEAD") {
+        res.end();
+        return;
+      }
+      fs.createReadStream(DATA_FILE).pipe(res);
+      return;
+    }
+
     const safePath = pathname.replace(/^\/+/, "");
     serveFile(req, res, safePath);
   } catch (error) {
