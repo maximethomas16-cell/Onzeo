@@ -4,7 +4,7 @@ plugins {
 
 val widgetEndpoint = providers.gradleProperty("widgetEndpoint")
   .orElse(providers.environmentVariable("FC_REGNY_WIDGET_ENDPOINT"))
-  .orElse("http://192.168.1.203:4173/api/public/widget")
+  .orElse("https://maximethomas16-cell.github.io/fc-regny-widget-codex/widget-data.json")
   .get()
 
 android {
@@ -15,8 +15,8 @@ android {
     applicationId = "fr.fcregny.widget"
     minSdk = 26
     targetSdk = 35
-    versionCode = 3
-    versionName = "1.0.2"
+    versionCode = 4
+    versionName = "1.0.3"
     buildConfigField("String", "WIDGET_ENDPOINT", "\"$widgetEndpoint\"")
   }
 

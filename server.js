@@ -794,6 +794,11 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (pathname === "/widget-data.json") {
+      json(res, 200, { data: buildWidgetPayloadV2(readSeasonData()) });
+      return;
+    }
+
     const safePath = pathname.replace(/^\/+/, "");
     serveFile(req, res, safePath);
   } catch (error) {
