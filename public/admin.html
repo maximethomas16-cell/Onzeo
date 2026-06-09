@@ -16,7 +16,7 @@
           <div>
             <p class="eyebrow">Administration securisee</p>
             <h1>FC Regny Admin</h1>
-            <p class="lede">Version gratuite: lecture publique statique et ecriture admin via Supabase.</p>
+            <p class="lede">Version club: choix simple de l'equipe, import des matchs et publication widget-ready.</p>
           </div>
         </div>
         <div class="topbar-actions">
@@ -67,6 +67,37 @@
               <span class="mini-pill" id="adminSeasonLabel">Saison inconnue</span>
               <span class="mini-pill" id="adminUpdatedLabel">MAJ inconnue</span>
               <span class="mini-pill" id="adminUserLabel">Session fermee</span>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Selection Roannais</p>
+                <h2>Choisir le club suivi</h2>
+              </div>
+            </div>
+            <p class="panel-copy">
+              Importe le classement et les rencontres de la poule, puis choisis la division D1 a D5 et l'equipe a suivre.
+            </p>
+            <div class="grid two-col">
+              <label class="field">
+                <span>Division</span>
+                <select id="divisionSelect">
+                  <option value="D1">D1</option>
+                  <option value="D2">D2</option>
+                  <option value="D3">D3</option>
+                  <option value="D4">D4</option>
+                  <option value="D5">D5</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Equipe du widget</span>
+                <select id="trackedTeamSelect"></select>
+              </label>
+            </div>
+            <div class="actions">
+              <button class="btn" id="applyTrackedTeamBtn" type="button">Appliquer la selection</button>
             </div>
           </article>
 
@@ -181,6 +212,6 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script type="module" src="./admin.js?v=free-static-1"></script>
+    <script type="module" src="./admin.js?v=roannais-3"></script>
   </body>
 </html>

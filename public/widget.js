@@ -1,5 +1,5 @@
-import { buildWidgetPayloadV2, escapeHtml } from "./shared.js";
-import { loadPublicSeasonData } from "./data-source.js";
+import { buildWidgetPayloadV2, escapeHtml } from "./shared.js?v=roannais-3";
+import { loadPublicSeasonData } from "./data-source.js?v=roannais-3";
 
 const el = document.getElementById("widgetStandalone");
 
@@ -16,7 +16,7 @@ function renderEmpty(data) {
       </div>
       <span class="phone-badge">En attente</span>
     </div>
-    <p class="widget-mini-copy">Ajoute des matchs dans l'admin pour alimenter le dernier et le prochain rendez-vous.</p>
+    <p class="widget-mini-copy">Ajoute ou importe les matchs de l'equipe suivie pour alimenter le widget.</p>
   `;
 }
 
@@ -27,6 +27,40 @@ function renderTeamsLine(card, showScore) {
       <strong>${escapeHtml(showScore ? card.scoreLine || "-" : "vs")}</strong>
       <span>${escapeHtml(card.awayTeam?.name || "Exterieur")} <span class="calendar-rank">${escapeHtml(formatRank(card.awayTeam?.rank))}</span></span>
     </div>
+  `;
+}
+
+function renderStanding(data) {
+  const standing = data.standing || {};
+  return `
+    <section class="widget-split-block widget-standing-block">
+      <div class="widget-split-head">
+        <p class="eyebrow">Classement</p>
+        <span class="phone-badge">${escapeHtml(standing.division || data.season?.division || "D?")}</span>
+      </div>
+      <div class="widget-hero-rankline">
+        <strong class="widget-hero-rank">#${escapeHtml(standing.rank ?? "—")}</strong>
+        <div class="widget-hero-copy">
+          <h3>${escapeHtml(data.club?.trackedTeam || data.club?.name || "Equipe")}</h3>
+          <p>${escapeHtml(standing.points ?? "—")} pts · ${escapeHtml(standing.played ?? "—")} j · Diff ${escapeHtml(
+            standing.goalDifference ?? "—",
+          )}</p>
+        </div>
+      </div>
+      <div class="standings-context-grid compact">
+        ${(standing.focusRows || [])
+          .map(
+            (row) => `
+              <div class="standings-context-row ${row.tracked ? "tracked" : ""}">
+                <span>#${escapeHtml(row.rank ?? "—")}</span>
+                <strong>${escapeHtml(row.team)}</strong>
+                <span>${escapeHtml(row.points ?? "—")} pts</span>
+              </div>
+            `,
+          )
+          .join("")}
+      </div>
+    </section>
   `;
 }
 
@@ -74,7 +108,6 @@ function renderNextMatch(card) {
       </div>
       <div class="widget-mini-meta">
         <strong>${escapeHtml(card.kickoffTimeLabel || "--:--")}</strong>
-        <span>-</span>
         <span>${escapeHtml(card.venue || "Lieu a confirmer")}</span>
       </div>
       ${renderTeamsLine(card, false)}
@@ -84,7 +117,7 @@ function renderNextMatch(card) {
 }
 
 function renderWidget(data) {
-  if (!data || (!data.lastMatch && !data.nextMatch)) {
+  if (!data || (!data.lastMatch && !data.nextMatch && !data.standing)) {
     renderEmpty(data || {});
     return;
   }
@@ -97,6 +130,7 @@ function renderWidget(data) {
       </div>
       <span class="phone-badge">${escapeHtml(data.season?.team || "Seniors 1")}</span>
     </div>
+    ${renderStanding(data)}
     <div class="widget-split-stack">
       ${renderLastMatch(data.lastMatch)}
       ${renderNextMatch(data.nextMatch)}

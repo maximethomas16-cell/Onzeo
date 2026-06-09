@@ -1,17 +1,18 @@
 const DEFAULT_DATA = {
   club: {
-    name: "FC Régny",
-    fullName: "Football Club de Régny",
+    name: "FC Regny",
+    fullName: "Football Club de Regny",
     trackedTeam: "REGNY FC",
-    defaultVenue: "Rue du Collège, 42630 Régny",
+    defaultVenue: "Rue du College, 42630 Regny",
     sourceLabel: "FFF / SportCorico",
     logoPath: "./assets/logo-fc-regny.png",
   },
   season: {
     label: "2025/2026",
     team: "Seniors 1",
+    division: "D4",
     competition: "District 4 R - Senior - Poule C",
-    district: "Délégation du Roannais",
+    district: "Delegation du Roannais",
   },
   summary: {
     rank: null,
@@ -59,6 +60,50 @@ function slugify(value) {
     .toLowerCase();
 }
 
+function inferDivisionFromCompetition(value) {
+  const raw = String(value || "");
+  const match = raw.match(/district\s*([1-5])/i);
+  return match ? `D${match[1]}` : "";
+}
+
+export function normalizeDivision(value) {
+  const raw = String(value || "").trim().toUpperCase();
+  if (!raw) return "";
+  const direct = raw.match(/D\s*([1-5])/);
+  if (direct) return `D${direct[1]}`;
+  const district = raw.match(/DISTRICT\s*([1-5])/);
+  if (district) return `D${district[1]}`;
+  const digit = raw.match(/\b([1-5])\b/);
+  return digit ? `D${digit[1]}` : "";
+}
+
+function titleizeToken(token) {
+  const upper = token.toUpperCase();
+  const acronyms = new Set(["AS", "CS", "ES", "FC", "JS", "OC", "OL", "OS", "SC", "US"]);
+  if (!token) return "";
+  if (/^\d+$/.test(token)) return token;
+  if (acronyms.has(upper) || token.length <= 2) return upper;
+  return upper.charAt(0) + upper.slice(1).toLowerCase();
+}
+
+function prettifyTeamName(value) {
+  return String(value || "")
+    .trim()
+    .split(/\s+/)
+    .map(titleizeToken)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function inferClubNameFromTeamName(teamName) {
+  const raw = String(teamName || "")
+    .replace(/\s+[1-9]$/u, "")
+    .replace(/\s+[ABCD]$/u, "")
+    .trim();
+  return prettifyTeamName(raw);
+}
+
 function normalizeStandingRow(row) {
   if (!row || typeof row !== "object") return null;
   return {
@@ -103,7 +148,7 @@ export function normalizeSeasonData(input) {
     : safe.standingsTable;
   const matches = Array.isArray(data.matches) ? data.matches.map(normalizeMatch).filter(Boolean) : safe.matches;
 
-  return {
+  const normalized = {
     club: {
       ...safe.club,
       ...(data.club || {}),
@@ -111,6 +156,10 @@ export function normalizeSeasonData(input) {
     season: {
       ...safe.season,
       ...(data.season || {}),
+      division:
+        normalizeDivision(data.season?.division) ||
+        inferDivisionFromCompetition(data.season?.competition) ||
+        safe.season.division,
     },
     summary: {
       ...safe.summary,
@@ -124,6 +173,8 @@ export function normalizeSeasonData(input) {
     matches: matches.sort(matchSort),
     lastUpdated: normalizeDate(data.lastUpdated) || null,
   };
+
+  return syncSummaryFromStandings(normalized);
 }
 
 export function loadTheme() {
@@ -228,6 +279,10 @@ export function teamSimilarityScore(left, right) {
   return score;
 }
 
+function isSameTeam(left, right) {
+  return teamSimilarityScore(left, right) >= 12;
+}
+
 export function findTeamStanding(standingsTable, teamName) {
   let bestRow = null;
   let bestScore = 0;
@@ -243,12 +298,93 @@ export function findTeamStanding(standingsTable, teamName) {
   return bestScore >= 12 ? bestRow : null;
 }
 
+export function getTrackedStanding(standingsTable, trackedTeam) {
+  return findTeamStanding(standingsTable || [], trackedTeam);
+}
+
+export function isTrackedTeamMatch(match, trackedTeam) {
+  if (!trackedTeam) return true;
+  return isSameTeam(match?.homeTeam, trackedTeam) || isSameTeam(match?.awayTeam, trackedTeam);
+}
+
+export function filterMatchesForTeam(matches, trackedTeam) {
+  return [...(matches || [])].filter((match) => isTrackedTeamMatch(match, trackedTeam)).sort(matchSort);
+}
+
+export function getAvailableTeams(seasonData) {
+  const teams = new Map();
+
+  const pushTeam = (teamName, preferredStanding = null) => {
+    if (!teamName) return;
+    const standing = preferredStanding || findTeamStanding(seasonData?.standingsTable || [], teamName);
+    const value = standing?.team || teamName;
+    const key = standing ? `standing:${normalizeTeamName(standing.team)}` : `raw:${normalizeTeamName(teamName)}`;
+    if (!key || teams.has(key)) return;
+    teams.set(key, {
+      value,
+      label: standing?.rank ? `${value} (#${standing.rank})` : value,
+      rank: standing?.rank ?? null,
+    });
+  };
+
+  (seasonData?.standingsTable || []).forEach((row) => pushTeam(row.team, row));
+  (seasonData?.matches || []).forEach((match) => {
+    pushTeam(match.homeTeam);
+    pushTeam(match.awayTeam);
+  });
+
+  return [...teams.values()].sort((left, right) => {
+    if ((left.rank ?? 999) !== (right.rank ?? 999)) return (left.rank ?? 999) - (right.rank ?? 999);
+    return left.value.localeCompare(right.value, "fr");
+  });
+}
+
+export function syncSummaryFromStandings(seasonData) {
+  const next = clone(seasonData || DEFAULT_DATA);
+  const standing = getTrackedStanding(next.standingsTable, next.club?.trackedTeam);
+  if (!standing) return next;
+
+  next.summary = {
+    ...next.summary,
+    rank: standing.rank ?? next.summary?.rank ?? null,
+    points: standing.points ?? next.summary?.points ?? null,
+    played: standing.played ?? next.summary?.played ?? null,
+    goalDifference: standing.goalDifference ?? next.summary?.goalDifference ?? null,
+  };
+
+  return next;
+}
+
+export function applyTrackedTeamSelection(seasonData, options = {}) {
+  const next = clone(seasonData || DEFAULT_DATA);
+  const trackedTeam = String(options.trackedTeam || next.club?.trackedTeam || "").trim();
+  const inferredClubName = inferClubNameFromTeamName(trackedTeam);
+
+  next.club = {
+    ...next.club,
+    trackedTeam,
+    name: String(options.clubName || inferredClubName || next.club?.name || "").trim() || next.club?.name,
+    fullName:
+      String(options.fullName || next.club?.fullName || "").trim() ||
+      `Football Club ${inferredClubName}`.trim(),
+  };
+
+  next.season = {
+    ...next.season,
+    team: String(options.seasonTeam || trackedTeam || next.season?.team || "").trim() || next.season?.team,
+    division:
+      normalizeDivision(options.division) ||
+      normalizeDivision(next.season?.division) ||
+      inferDivisionFromCompetition(next.season?.competition) ||
+      DEFAULT_DATA.season.division,
+  };
+
+  return normalizeSeasonData(next);
+}
+
 export function resultFor(match, trackedTeam) {
-  const tracked = normalizeTeamName(trackedTeam);
-  const home = normalizeTeamName(match.homeTeam);
-  const away = normalizeTeamName(match.awayTeam);
-  const isHome = home.includes(tracked) || tracked.includes(home);
-  const isAway = away.includes(tracked) || tracked.includes(away);
+  const isHome = isSameTeam(match.homeTeam, trackedTeam);
+  const isAway = isSameTeam(match.awayTeam, trackedTeam);
 
   if (!isFinished(match) || (!isHome && !isAway)) {
     return { label: "A", cls: "" };
@@ -274,7 +410,7 @@ export function formatShortDate(iso) {
 
 export function formatDateTime(iso) {
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "Date à confirmer";
+  if (Number.isNaN(date.getTime())) return "Date a confirmer";
   return new Intl.DateTimeFormat("fr-FR", {
     weekday: "short",
     day: "2-digit",
@@ -287,9 +423,9 @@ export function formatDateTime(iso) {
 }
 
 export function formatUpdatedAt(iso) {
-  if (!iso) return "Jamais mise à jour";
+  if (!iso) return "Jamais mise a jour";
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "Jamais mise à jour";
+  if (Number.isNaN(date.getTime())) return "Jamais mise a jour";
   return new Intl.DateTimeFormat("fr-FR", {
     day: "2-digit",
     month: "2-digit",
@@ -305,13 +441,14 @@ export function monthKey(iso) {
   return new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(date);
 }
 
-export function getNextMatch(matches) {
+export function getNextMatch(matches, trackedTeam) {
   const now = Date.now();
-  return [...matches].sort(matchSort).find((match) => !isFinished(match) && new Date(match.date).getTime() >= now);
+  const scheduled = filterMatchesForTeam(matches, trackedTeam).filter((match) => !isFinished(match));
+  return scheduled.find((match) => new Date(match.date).getTime() >= now) || scheduled[0];
 }
 
-export function getLastFinishedMatch(matches) {
-  return [...matches]
+export function getLastFinishedMatch(matches, trackedTeam) {
+  return filterMatchesForTeam(matches, trackedTeam)
     .filter(isFinished)
     .sort((left, right) => new Date(right.date).getTime() - new Date(left.date).getTime())[0];
 }
@@ -353,7 +490,7 @@ function buildWidgetTeam(standingsTable, trackedTeam, teamName, score) {
     name: teamName,
     rank: standing?.rank ?? null,
     points: standing?.points ?? null,
-    tracked: teamSimilarityScore(teamName, trackedTeam) >= 12,
+    tracked: isSameTeam(teamName, trackedTeam),
     score,
   };
 }
@@ -386,9 +523,51 @@ export function buildWidgetMatchCard(match, seasonData, title) {
   };
 }
 
+export function getStandingsFocusRows(standingsTable, trackedTeam, radius = 2) {
+  const rows = [...(standingsTable || [])];
+  if (!rows.length) return [];
+
+  const standing = getTrackedStanding(rows, trackedTeam);
+  if (!standing) {
+    return rows.slice(0, Math.min(rows.length, radius * 2 + 1)).map((row) => ({
+      ...row,
+      tracked: false,
+    }));
+  }
+
+  const index = rows.findIndex((row) => row.rank === standing.rank && isSameTeam(row.team, standing.team));
+  const safeIndex = index >= 0 ? index : Math.max(0, (standing.rank || 1) - 1);
+  const start = Math.max(0, safeIndex - radius);
+  const end = Math.min(rows.length, safeIndex + radius + 1);
+
+  return rows.slice(start, end).map((row) => ({
+    ...row,
+    tracked: isSameTeam(row.team, trackedTeam),
+  }));
+}
+
+export function buildStandingSnapshot(seasonData) {
+  const summary = seasonData.summary || {};
+  const standing = getTrackedStanding(seasonData.standingsTable, seasonData.club.trackedTeam);
+  return {
+    team: seasonData.club.trackedTeam,
+    clubName: seasonData.club.name,
+    rank: standing?.rank ?? summary.rank ?? null,
+    points: standing?.points ?? summary.points ?? null,
+    played: standing?.played ?? summary.played ?? null,
+    goalDifference: standing?.goalDifference ?? summary.goalDifference ?? null,
+    totalTeams: seasonData.standingsTable.length || null,
+    division: normalizeDivision(seasonData.season.division) || inferDivisionFromCompetition(seasonData.season.competition),
+    competition: seasonData.season.competition || "",
+    focusRows: getStandingsFocusRows(seasonData.standingsTable, seasonData.club.trackedTeam),
+  };
+}
+
 export function buildWidgetPayloadV2(seasonData) {
-  const nextMatch = getNextMatch(seasonData.matches);
-  const lastMatch = getLastFinishedMatch(seasonData.matches);
+  const trackedMatches = filterMatchesForTeam(seasonData.matches, seasonData.club.trackedTeam);
+  const nextMatch = getNextMatch(trackedMatches, seasonData.club.trackedTeam);
+  const lastMatch = getLastFinishedMatch(trackedMatches, seasonData.club.trackedTeam);
+  const standing = buildStandingSnapshot(seasonData);
 
   if (!nextMatch && !lastMatch) {
     return {
@@ -403,7 +582,9 @@ export function buildWidgetPayloadV2(seasonData) {
       season: {
         label: seasonData.season.label,
         team: seasonData.season.team,
+        division: seasonData.season.division,
       },
+      standing,
       lastMatch: null,
       nextMatch: null,
       deepLinks: {
@@ -427,8 +608,10 @@ export function buildWidgetPayloadV2(seasonData) {
     season: {
       label: seasonData.season.label,
       team: seasonData.season.team,
+      division: seasonData.season.division,
       competition: seasonData.season.competition,
     },
+    standing,
     lastMatch: buildWidgetMatchCard(lastMatch, seasonData, "Dernier match"),
     nextMatch: buildWidgetMatchCard(nextMatch, seasonData, "Prochain match"),
     deepLinks: {
@@ -453,7 +636,7 @@ export async function fetchJson(url, options = {}) {
 
   if (!response.ok) {
     const message = typeof body === "object" && body?.error ? body.error : response.statusText;
-    throw new Error(message || "Erreur réseau");
+    throw new Error(message || "Erreur reseau");
   }
 
   return body;
@@ -465,8 +648,7 @@ export function parseFrenchDate(dateText) {
     janvier: 0,
     fev: 1,
     fevrier: 1,
-    "fév": 1,
-    "février": 1,
+    fevriere: 1,
     mar: 2,
     mars: 2,
     avr: 3,
@@ -476,7 +658,6 @@ export function parseFrenchDate(dateText) {
     juil: 6,
     juillet: 6,
     aout: 7,
-    "août": 7,
     sep: 8,
     sept: 8,
     septembre: 8,
@@ -486,12 +667,10 @@ export function parseFrenchDate(dateText) {
     novembre: 10,
     dec: 11,
     decembre: 11,
-    "déc": 11,
-    "décembre": 11,
   };
 
   const clean = String(dateText || "").toLowerCase().replace(/\./g, "");
-  const match = clean.match(/(\d{1,2})\s+([a-zéûôîàùç]+)\s+(\d{4}).*?(\d{1,2})h(\d{2})?/i);
+  const match = clean.match(/(\d{1,2})\s+([a-zA-Z]+)\s+(\d{4}).*?(\d{1,2})h(\d{2})?/i);
   if (!match) return null;
   const day = Number(match[1]);
   const month = months[match[2]];
@@ -523,7 +702,7 @@ export function parsePastedText(text) {
       normalizeMatch({
         id: `${dateRaw}-${homeRaw}-${awayRaw}`,
         date: iso,
-        competition: competitionRaw.trim() || "Compétition",
+        competition: competitionRaw.trim() || "Competition",
         round: "",
         type: competitionRaw.toLowerCase().includes("coupe") ? "cup" : "championship",
         homeTeam: homeRaw.trim(),
@@ -532,17 +711,17 @@ export function parsePastedText(text) {
         awayScore: Number(awayScore),
         status: "finished",
         venue: "",
-      })
+      }),
     );
   }
 
   for (let index = 0; index < lines.length - 4; index += 1) {
     const iso = parseFrenchDate(lines[index]);
     if (!iso) continue;
-    const competition = lines[index + 1] || "Compétition";
+    const competition = lines[index + 1] || "Competition";
     const homeTeam = lines[index + 2] || "Domicile";
     const score = (lines[index + 3] || "").match(/^(\d+)\s+(\d+)$/);
-    const awayTeam = lines[index + 4] || "Extérieur";
+    const awayTeam = lines[index + 4] || "Exterieur";
     if (!score) continue;
 
     matches.push(
@@ -558,7 +737,7 @@ export function parsePastedText(text) {
         awayScore: Number(score[2]),
         status: "finished",
         venue: "",
-      })
+      }),
     );
   }
 
@@ -568,17 +747,15 @@ export function parsePastedText(text) {
 }
 
 export function computeSeasonStats(matches, trackedTeam) {
-  const finished = matches.filter(isFinished);
+  const trackedMatches = filterMatchesForTeam(matches, trackedTeam);
+  const finished = trackedMatches.filter(isFinished);
   const results = finished.map((match) => resultFor(match, trackedTeam));
   let goalsFor = 0;
   let goalsAgainst = 0;
-  const tracked = normalizeTeamName(trackedTeam);
 
   for (const match of finished) {
-    const home = normalizeTeamName(match.homeTeam);
-    const away = normalizeTeamName(match.awayTeam);
-    const isHome = home.includes(tracked) || tracked.includes(home);
-    const isAway = away.includes(tracked) || tracked.includes(away);
+    const isHome = isSameTeam(match.homeTeam, trackedTeam);
+    const isAway = isSameTeam(match.awayTeam, trackedTeam);
     if (isHome) {
       goalsFor += Number(match.homeScore || 0);
       goalsAgainst += Number(match.awayScore || 0);
@@ -590,7 +767,7 @@ export function computeSeasonStats(matches, trackedTeam) {
   }
 
   return {
-    total: matches.length,
+    total: trackedMatches.length,
     wins: results.filter((result) => result.label === "V").length,
     draws: results.filter((result) => result.label === "N").length,
     losses: results.filter((result) => result.label === "D").length,

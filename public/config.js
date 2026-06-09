@@ -1,7 +1,7 @@
 export const APP_CONFIG = {
   provider: "local",
   seasonFile: "./data/season.json",
-  allowLocalAdmin: false,
+  allowLocalAdmin: true,
   supabaseUrl: "",
   supabaseAnonKey: "",
   supabaseSeasonTable: "season_data",

@@ -1,23 +1,30 @@
 import {
   bindThemeButtons,
+  buildStandingSnapshot,
+  buildWidgetMatchCard,
   computeSeasonStats,
   escapeHtml,
+  filterMatchesForTeam,
   findTeamStanding,
   formatShortDate,
+  getLastFinishedMatch,
+  getNextMatch,
   isFinished,
   matchSort,
   monthKey,
   normalizeSeasonData,
   normalizeTeamName,
   resultFor,
-} from "./shared.js";
-import { getDataSourceStatus, loadPublicSeasonData } from "./data-source.js";
+  teamSimilarityScore,
+} from "./shared.js?v=roannais-3";
+import { getDataSourceStatus, loadPublicSeasonData } from "./data-source.js?v=roannais-3";
 
 const els = {
   lastMatchesBlock: document.getElementById("lastMatchesBlock"),
   seasonPills: document.getElementById("seasonPills"),
   summaryTitle: document.getElementById("summaryTitle"),
   seasonSummary: document.getElementById("seasonSummary"),
+  widgetDashboard: document.getElementById("widgetDashboard"),
   seasonCalendar: document.getElementById("seasonCalendar"),
   standingsTable: document.getElementById("standingsTable"),
   calendarFilter: document.getElementById("calendarFilter"),
@@ -32,15 +39,23 @@ let activeTab = "summary";
 function toast(message) {
   els.toast.textContent = message;
   els.toast.classList.add("show");
-  clearTimeout(toast.timer);
-  toast.timer = window.setTimeout(() => els.toast.classList.remove("show"), 2600);
+  clearTimeout(els.toast.timer);
+  els.toast.timer = window.setTimeout(() => els.toast.classList.remove("show"), 2600);
+}
+
+function getTrackedMatches() {
+  return filterMatchesForTeam(state.matches, state.club.trackedTeam);
 }
 
 function getLastMatches(limit = 5) {
-  return [...state.matches]
+  return [...getTrackedMatches()]
     .filter(isFinished)
     .sort((left, right) => new Date(right.date).getTime() - new Date(left.date).getTime())
     .slice(0, limit);
+}
+
+function isTrackedName(teamName) {
+  return teamSimilarityScore(teamName, state.club.trackedTeam) >= 12;
 }
 
 function renderTeamLabelWithRank(teamName) {
@@ -50,19 +65,111 @@ function renderTeamLabelWithRank(teamName) {
 }
 
 function renderHeaderMeta() {
-  els.summaryTitle.textContent = `${state.season.team} · ${state.season.label}`;
+  els.summaryTitle.textContent = `${state.club.trackedTeam} · ${state.season.label}`;
   els.seasonPills.innerHTML = `
-    <span class="mini-pill">${escapeHtml(state.season.competition || "Compétition")}</span>
-    <span class="mini-pill">${escapeHtml(state.season.district || "District")}</span>
+    <span class="mini-pill">${escapeHtml(state.season.division || "D?")}</span>
+    <span class="mini-pill">${escapeHtml(state.season.competition || "Competition")}</span>
+    <span class="mini-pill">${escapeHtml(state.season.district || "Roannais")}</span>
   `;
 }
 
 function renderSeasonSummary(matches) {
   const stats = computeSeasonStats(matches, state.club.trackedTeam);
   els.seasonSummary.innerHTML = `
+    <span class="mini-pill">${escapeHtml(state.club.name || state.club.trackedTeam)}</span>
     <span class="mini-pill">${stats.total} match(s)</span>
     <span class="mini-pill">${stats.wins} V / ${stats.draws} N / ${stats.losses} D</span>
     <span class="mini-pill">${stats.goalsFor} BP / ${stats.goalsAgainst} BC</span>
+  `;
+}
+
+function renderCompactTeamsLine(card, showScore) {
+  return `
+    <div class="widget-inline-match">
+      <span>${escapeHtml(card.homeTeam?.name || "Domicile")} <span class="calendar-rank">${escapeHtml(
+        card.homeTeam?.rank ? `#${card.homeTeam.rank}` : "NC",
+      )}</span></span>
+      <strong>${escapeHtml(showScore ? card.scoreLine || "-" : "vs")}</strong>
+      <span>${escapeHtml(card.awayTeam?.name || "Exterieur")} <span class="calendar-rank">${escapeHtml(
+        card.awayTeam?.rank ? `#${card.awayTeam.rank}` : "NC",
+      )}</span></span>
+    </div>
+  `;
+}
+
+function renderDashboardMatch(card, emptyLabel) {
+  if (!card) {
+    return `
+      <article class="widget-split-block">
+        <div class="widget-split-head">
+          <p class="eyebrow">${escapeHtml(emptyLabel)}</p>
+        </div>
+        <p class="widget-mini-copy">Information non disponible pour le moment.</p>
+      </article>
+    `;
+  }
+
+  return `
+    <article class="widget-split-block">
+      <div class="widget-split-head">
+        <p class="eyebrow">${escapeHtml(card.title || emptyLabel)}</p>
+        <span class="phone-badge">${escapeHtml(card.kickoffDateLabel || "--/--")}</span>
+      </div>
+      ${card.isFinished ? renderCompactTeamsLine(card, true) : ""}
+      ${!card.isFinished ? `<div class="widget-mini-meta"><strong>${escapeHtml(card.kickoffTimeLabel || "--:--")}</strong><span>${escapeHtml(card.venue || "Lieu a confirmer")}</span></div>` : ""}
+      ${!card.isFinished ? renderCompactTeamsLine(card, false) : ""}
+      <p class="widget-mini-copy">${escapeHtml(card.competition || "")}</p>
+    </article>
+  `;
+}
+
+function renderStandingContext(standing) {
+  if (!standing.focusRows?.length) {
+    return `<p class="meta-note">Le contexte de classement apparaitra ici apres import.</p>`;
+  }
+
+  return `
+    <div class="standings-context-grid">
+      ${standing.focusRows
+        .map(
+          (row) => `
+            <div class="standings-context-row ${row.tracked ? "tracked" : ""}">
+              <span>#${escapeHtml(row.rank ?? "—")}</span>
+              <strong>${escapeHtml(row.team)}</strong>
+              <span>${escapeHtml(row.points ?? "—")} pts</span>
+            </div>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function renderWidgetDashboard() {
+  const standing = buildStandingSnapshot(state);
+  const lastCard = buildWidgetMatchCard(getLastFinishedMatch(state.matches, state.club.trackedTeam), state, "Dernier match");
+  const nextCard = buildWidgetMatchCard(getNextMatch(state.matches, state.club.trackedTeam), state, "Prochain match");
+
+  els.widgetDashboard.innerHTML = `
+    <div class="widget-dashboard-grid">
+      <section class="widget-hero-card">
+        <p class="eyebrow">Classement actuel</p>
+        <div class="widget-hero-rankline">
+          <strong class="widget-hero-rank">#${escapeHtml(standing.rank ?? "—")}</strong>
+          <div class="widget-hero-copy">
+            <h3>${escapeHtml(state.club.trackedTeam || state.club.name)}</h3>
+            <p>${escapeHtml(standing.division || state.season.division || "D?")} · ${escapeHtml(
+              standing.points ?? "—",
+            )} pts · ${escapeHtml(standing.played ?? "—")} j · Diff ${escapeHtml(standing.goalDifference ?? "—")}</p>
+          </div>
+        </div>
+        ${renderStandingContext(standing)}
+      </section>
+      <section class="widget-match-column">
+        ${renderDashboardMatch(lastCard, "Dernier match")}
+        ${renderDashboardMatch(nextCard, "Prochain match")}
+      </section>
+    </div>
   `;
 }
 
@@ -70,15 +177,15 @@ function renderLastMatches() {
   const lastMatches = getLastMatches(5);
 
   if (!lastMatches.length) {
-    els.lastMatchesBlock.innerHTML = `<p class="meta-note">Aucun résultat récent disponible.</p>`;
+    els.lastMatchesBlock.innerHTML = `<p class="meta-note">Aucun resultat recent disponible.</p>`;
     return;
   }
 
   els.lastMatchesBlock.innerHTML = `
     <div class="panel-head">
       <div>
-        <p class="eyebrow">Résultats récents</p>
-        <h2>Derniers matchs</h2>
+        <p class="eyebrow">Forme recente</p>
+        <h2>Derniers resultats</h2>
       </div>
     </div>
     <div class="last-list">
@@ -100,16 +207,13 @@ function renderLastMatches() {
 
 function filteredMatchesForCalendar() {
   const filter = els.calendarFilter.value;
-  const tracked = normalizeTeamName(state.club.trackedTeam);
-  return [...state.matches]
+  return getTrackedMatches()
     .filter((match) => {
       const competition = String(match.competition || "").toLowerCase();
-      const homeTracked = normalizeTeamName(match.homeTeam).includes(tracked) || tracked.includes(normalizeTeamName(match.homeTeam));
-      const awayTracked = normalizeTeamName(match.awayTeam).includes(tracked) || tracked.includes(normalizeTeamName(match.awayTeam));
       if (filter === "league") return competition.includes("district") || competition.includes("championnat");
       if (filter === "cup") return competition.includes("coupe");
-      if (filter === "home") return homeTracked;
-      if (filter === "away") return awayTracked;
+      if (filter === "home") return isTrackedName(match.homeTeam);
+      if (filter === "away") return isTrackedName(match.awayTeam);
       if (filter === "future") return !isFinished(match);
       return true;
     })
@@ -120,11 +224,10 @@ function renderCalendar() {
   const matches = filteredMatchesForCalendar();
 
   if (!matches.length) {
-    els.seasonCalendar.innerHTML = `<p class="meta-note">Aucun match à afficher avec ce filtre.</p>`;
+    els.seasonCalendar.innerHTML = `<p class="meta-note">Aucun match a afficher avec ce filtre.</p>`;
     return;
   }
 
-  const tracked = normalizeTeamName(state.club.trackedTeam);
   const groups = new Map();
 
   matches.forEach((match) => {
@@ -137,15 +240,15 @@ function renderCalendar() {
     .map(([month, monthMatches]) => {
       const rows = monthMatches
         .map((match) => {
-          const homeTracked = normalizeTeamName(match.homeTeam).includes(tracked) || tracked.includes(normalizeTeamName(match.homeTeam));
-          const awayTracked = normalizeTeamName(match.awayTeam).includes(tracked) || tracked.includes(normalizeTeamName(match.awayTeam));
+          const homeTracked = isTrackedName(match.homeTeam);
+          const awayTracked = isTrackedName(match.awayTeam);
           const result = resultFor(match, state.club.trackedTeam);
           const score = isFinished(match) ? `${match.homeScore}-${match.awayScore}` : "—";
 
           return `
             <div class="calendar-row">
               <div>${escapeHtml(formatShortDate(match.date))}</div>
-              <div class="calendar-competition competition">${escapeHtml(match.competition || "Compétition")}</div>
+              <div class="calendar-competition competition">${escapeHtml(match.competition || "Competition")}</div>
               <div class="calendar-home ${homeTracked ? "tracked-team" : ""}">${renderTeamLabelWithRank(match.homeTeam)}</div>
               <div class="calendar-score">${escapeHtml(score)}</div>
               <div class="calendar-away ${awayTracked ? "tracked-team" : ""}">${renderTeamLabelWithRank(match.awayTeam)}</div>
@@ -167,20 +270,21 @@ function renderCalendar() {
 
 function renderStandings() {
   if (!state.standingsTable.length) {
-    els.standingsTable.innerHTML = `<p class="meta-note">Aucun classement chargé.</p>`;
+    els.standingsTable.innerHTML = `<p class="meta-note">Aucun classement charge.</p>`;
     return;
   }
 
   const tracked = normalizeTeamName(state.club.trackedTeam);
-  const summary = state.summary || {};
+  const standing = buildStandingSnapshot(state);
 
   els.standingsTable.innerHTML = `
     <div class="standings-overview">
-      <span class="overview-chip"><strong>Pos.</strong><span>${escapeHtml(summary.rank ?? "—")}</span></span>
-      <span class="overview-chip"><strong>Pts</strong><span>${escapeHtml(summary.points ?? "—")}</span></span>
-      <span class="overview-chip"><strong>J</strong><span>${escapeHtml(summary.played ?? "—")}</span></span>
-      <span class="overview-chip"><strong>Diff.</strong><span>${escapeHtml(summary.goalDifference ?? "—")}</span></span>
+      <span class="overview-chip"><strong>Pos.</strong><span>${escapeHtml(standing.rank ?? "—")}</span></span>
+      <span class="overview-chip"><strong>Pts</strong><span>${escapeHtml(standing.points ?? "—")}</span></span>
+      <span class="overview-chip"><strong>J</strong><span>${escapeHtml(standing.played ?? "—")}</span></span>
+      <span class="overview-chip"><strong>Diff.</strong><span>${escapeHtml(standing.goalDifference ?? "—")}</span></span>
     </div>
+    ${renderStandingContext(standing)}
     <div class="table-shell">
       <div class="standings-mobile">
         ${state.standingsTable
@@ -210,7 +314,7 @@ function renderStandings() {
           <thead>
             <tr>
               <th>Pr.</th>
-              <th>Équipe</th>
+              <th>Equipe</th>
               <th>Pts</th>
               <th>J</th>
               <th>G</th>
@@ -244,14 +348,16 @@ function renderStandings() {
           </tbody>
         </table>
       </div>
-      <p class="meta-note">Classement sous réserve des corrections officielles.</p>
+      <p class="meta-note">Classement sous reserve des corrections officielles.</p>
     </div>
   `;
 }
 
 function render() {
+  const trackedMatches = getTrackedMatches();
   renderHeaderMeta();
-  renderSeasonSummary(state.matches);
+  renderSeasonSummary(trackedMatches);
+  renderWidgetDashboard();
   renderLastMatches();
   renderCalendar();
   renderStandings();
@@ -272,7 +378,7 @@ async function refresh() {
   try {
     await loadPublicData();
   } catch (error) {
-    toast(`Impossible de charger les données: ${error.message}`);
+    toast(`Impossible de charger les donnees: ${error.message}`);
   }
 }
 
@@ -282,7 +388,7 @@ els.calendarFilter.addEventListener("change", renderCalendar);
 setTab(activeTab);
 const dataSourceStatus = getDataSourceStatus();
 if (dataSourceStatus.provider === "local") {
-  toast("Mode demo actif. Configure Supabase pour la version club en ligne.");
+  toast("Mode local actif. Les changements admin sont testes dans ce navigateur.");
 }
 refresh();
 

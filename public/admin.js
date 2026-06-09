@@ -1,4 +1,13 @@
-import { bindThemeButtons, clone, formatUpdatedAt, normalizeSeasonData, parsePastedText } from "./shared.js";
+import {
+  applyTrackedTeamSelection,
+  bindThemeButtons,
+  clone,
+  formatUpdatedAt,
+  getAvailableTeams,
+  normalizeDivision,
+  normalizeSeasonData,
+  parsePastedText,
+} from "./shared.js?v=roannais-3";
 import {
   getDataSourceStatus,
   loadAdminSeasonData,
@@ -6,7 +15,7 @@ import {
   logoutAdmin,
   restoreAdminSession,
   saveAdminSeasonData,
-} from "./data-source.js";
+} from "./data-source.js?v=roannais-3";
 
 const els = {
   authPanel: document.getElementById("authPanel"),
@@ -21,6 +30,9 @@ const els = {
   adminSeasonLabel: document.getElementById("adminSeasonLabel"),
   adminUpdatedLabel: document.getElementById("adminUpdatedLabel"),
   adminUserLabel: document.getElementById("adminUserLabel"),
+  divisionSelect: document.getElementById("divisionSelect"),
+  trackedTeamSelect: document.getElementById("trackedTeamSelect"),
+  applyTrackedTeamBtn: document.getElementById("applyTrackedTeamBtn"),
   clubNameInput: document.getElementById("clubNameInput"),
   trackedTeamInput: document.getElementById("trackedTeamInput"),
   seasonLabelInput: document.getElementById("seasonLabelInput"),
@@ -74,7 +86,43 @@ function applyDataSourceHint() {
   }
 }
 
+function refreshTeamOptions(preserveValue = true) {
+  const teams = getAvailableTeams(state);
+  const currentValue = preserveValue ? els.trackedTeamSelect.value || state.club.trackedTeam : state.club.trackedTeam;
+
+  if (!teams.length) {
+    const fallback = state.club.trackedTeam || "Equipe a definir";
+    els.trackedTeamSelect.innerHTML = `<option value="${fallback}">${fallback}</option>`;
+    els.trackedTeamSelect.value = fallback;
+    return;
+  }
+
+  els.trackedTeamSelect.innerHTML = teams
+    .map((team) => `<option value="${team.value}">${team.label}</option>`)
+    .join("");
+
+  const matching = teams.find((team) => team.value === currentValue);
+  els.trackedTeamSelect.value = matching?.value || teams[0].value;
+}
+
+function updateJsonEditor() {
+  els.jsonEditor.value = JSON.stringify(clone(state), null, 2);
+}
+
 function syncFormFromState() {
+  els.divisionSelect.value = normalizeDivision(state.season.division) || "D4";
+  refreshTeamOptions();
+  if (state.club.trackedTeam) {
+    const hasOption = [...els.trackedTeamSelect.options].some((option) => option.value === state.club.trackedTeam);
+    if (!hasOption) {
+      const option = document.createElement("option");
+      option.value = state.club.trackedTeam;
+      option.textContent = state.club.trackedTeam;
+      els.trackedTeamSelect.append(option);
+    }
+    els.trackedTeamSelect.value = state.club.trackedTeam;
+  }
+
   els.clubNameInput.value = state.club.name || "";
   els.trackedTeamInput.value = state.club.trackedTeam || "";
   els.seasonLabelInput.value = state.season.label || "";
@@ -87,9 +135,9 @@ function syncFormFromState() {
   els.pointsInput.value = state.summary.points ?? "";
   els.playedInput.value = state.summary.played ?? "";
   els.goalDifferenceInput.value = state.summary.goalDifference ?? "";
-  els.adminSeasonLabel.textContent = `${state.season.team} · ${state.season.label}`;
+  els.adminSeasonLabel.textContent = `${state.club.trackedTeam || state.season.team} · ${state.season.label}`;
   els.adminUpdatedLabel.textContent = `Derniere MAJ: ${formatUpdatedAt(state.lastUpdated)}`;
-  els.jsonEditor.value = JSON.stringify(state, null, 2);
+  updateJsonEditor();
 }
 
 function syncStateFromForm() {
@@ -99,6 +147,7 @@ function syncStateFromForm() {
   state.club.sourceLabel = els.sourceInput.value.trim();
   state.season.label = els.seasonLabelInput.value.trim();
   state.season.team = els.seasonTeamInput.value.trim();
+  state.season.division = normalizeDivision(els.divisionSelect.value) || state.season.division;
   state.season.competition = els.competitionInput.value.trim();
   state.season.district = els.districtInput.value.trim();
   state.summary.rank = els.rankInput.value === "" ? null : Number(els.rankInput.value);
@@ -107,6 +156,24 @@ function syncStateFromForm() {
   state.summary.goalDifference = els.goalDifferenceInput.value === "" ? null : Number(els.goalDifferenceInput.value);
   state.lastUpdated = new Date().toISOString();
   state = normalizeSeasonData(state);
+}
+
+function applyDivisionLabel() {
+  const division = normalizeDivision(state.season.division);
+  if (!division || !state.season.competition) return;
+  state.season.competition = state.season.competition.replace(/District\s*[1-5]/i, `District ${division.slice(1)}`);
+}
+
+function applyTrackedTeamSelectionFromUI() {
+  syncStateFromForm();
+  state = applyTrackedTeamSelection(state, {
+    trackedTeam: els.trackedTeamSelect.value,
+    division: els.divisionSelect.value,
+  });
+  applyDivisionLabel();
+  state.lastUpdated = new Date().toISOString();
+  syncFormFromState();
+  toast("Equipe du widget mise a jour.");
 }
 
 async function loadSeason() {
@@ -149,6 +216,7 @@ function mergeImportedMatches() {
   state.matches = [...byId.values()].sort((left, right) => new Date(left.date) - new Date(right.date));
   state.club.sourceLabel = "Import texte FFF / SportCorico";
   state.lastUpdated = new Date().toISOString();
+  state = normalizeSeasonData(state);
   syncFormFromState();
   toast(`${imported.length} match(s) importe(s).`);
 }
@@ -166,13 +234,12 @@ function applyJsonEditor() {
 
 async function save() {
   try {
-    syncStateFromForm();
     state = normalizeSeasonData(JSON.parse(els.jsonEditor.value || "{}"));
     state.lastUpdated = new Date().toISOString();
     state = normalizeSeasonData(await saveAdminSeasonData(state));
     syncFormFromState();
     els.saveFeedback.textContent = `Enregistre le ${formatUpdatedAt(state.lastUpdated)}.`;
-    toast("Donnnees enregistrees.");
+    toast("Donnees enregistrees.");
   } catch (error) {
     els.saveFeedback.textContent = error.message;
     toast(`Echec de l'enregistrement: ${error.message}`);
@@ -210,6 +277,7 @@ els.reloadBtn.addEventListener("click", async () => {
   toast("Donnees rechargees.");
 });
 els.logoutBtn.addEventListener("click", logout);
+els.applyTrackedTeamBtn.addEventListener("click", applyTrackedTeamSelectionFromUI);
 els.parseBtn.addEventListener("click", mergeImportedMatches);
 els.clearPasteBtn.addEventListener("click", () => {
   els.pasteInput.value = "";
@@ -235,10 +303,11 @@ els.saveBtn.addEventListener("click", save);
   els.pointsInput,
   els.playedInput,
   els.goalDifferenceInput,
+  els.divisionSelect,
 ].forEach((input) => {
   input.addEventListener("input", () => {
     syncStateFromForm();
-    els.jsonEditor.value = JSON.stringify(clone(state), null, 2);
+    updateJsonEditor();
   });
 });
 

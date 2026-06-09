@@ -283,6 +283,94 @@ body[data-theme="light"] .btn {
   margin-top: 4px;
 }
 
+.widget-dashboard,
+.widget-dashboard-grid,
+.widget-match-column,
+.widget-hero-card,
+.widget-hero-copy,
+.standings-context-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.widget-dashboard-grid {
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  align-items: start;
+}
+
+.widget-hero-card {
+  padding: 14px;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(242, 140, 27, 0.18), transparent 32%),
+    linear-gradient(145deg, rgba(43, 77, 156, 0.12), rgba(255, 255, 255, 0.04));
+}
+
+.widget-match-column {
+  grid-template-columns: 1fr;
+}
+
+.widget-hero-rankline {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.widget-hero-rank {
+  flex: 0 0 auto;
+  font-size: clamp(40px, 8vw, 64px);
+  line-height: 0.9;
+  letter-spacing: -0.08em;
+}
+
+.widget-hero-copy {
+  min-width: 0;
+}
+
+.widget-hero-copy h3 {
+  margin: 0;
+  font-size: clamp(20px, 4vw, 30px);
+  letter-spacing: -0.05em;
+  overflow-wrap: anywhere;
+}
+
+.widget-hero-copy p {
+  color: var(--muted);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.standings-context-grid {
+  margin-top: 2px;
+}
+
+.standings-context-grid.compact {
+  gap: 8px;
+}
+
+.standings-context-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 13px;
+}
+
+.standings-context-row strong {
+  overflow-wrap: anywhere;
+}
+
+.standings-context-row.tracked {
+  background: rgba(242, 140, 27, 0.16);
+  border-color: rgba(242, 140, 27, 0.26);
+}
+
 .phone-preview {
   position: sticky;
   top: 18px;
@@ -420,6 +508,11 @@ body[data-theme="light"] .widget-card {
   color: var(--text);
   font-size: 14px;
   line-height: 1.4;
+}
+
+.widget-inline-match span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .widget-inline-match strong {
@@ -1009,6 +1102,28 @@ tbody tr.highlight td {
   .tab-btn,
   .mini-pill {
     font-size: 13px;
+  }
+
+  .widget-dashboard-grid,
+  .widget-hero-rankline {
+    grid-template-columns: 1fr;
+  }
+
+  .widget-hero-rankline {
+    display: grid;
+    gap: 8px;
+  }
+
+  .widget-hero-rank {
+    font-size: 42px;
+  }
+
+  .standings-context-row {
+    grid-template-columns: 36px minmax(0, 1fr);
+  }
+
+  .standings-context-row span:last-child {
+    grid-column: 2;
   }
 
   .standings-overview {

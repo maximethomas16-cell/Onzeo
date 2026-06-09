@@ -1,5 +1,5 @@
-import { clone, normalizeSeasonData } from "./shared.js";
-import { APP_CONFIG } from "./config.js";
+import { clone, normalizeSeasonData } from "./shared.js?v=roannais-3";
+import { APP_CONFIG } from "./config.js?v=roannais-3";
 
 const DEFAULT_CONFIG = {
   provider: "local",
