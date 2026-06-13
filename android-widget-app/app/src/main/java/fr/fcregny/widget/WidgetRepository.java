@@ -32,7 +32,7 @@ final class WidgetRepository {
   static String getAdminUrl(Context context) {
     String endpoint = getEndpoint(context);
     if (endpoint == null || endpoint.isEmpty()) {
-      return "https://maximethomas16-cell.github.io/fc-regny-widget-codex/admin.html";
+      return "https://maximethomas16-cell.github.io/Onzeo/admin.html";
     }
 
     if (endpoint.endsWith("/widget-data.json")) {
@@ -53,7 +53,7 @@ final class WidgetRepository {
   static String getSelectorUrl(Context context) {
     String endpoint = getEndpoint(context);
     if (endpoint == null || endpoint.isEmpty()) {
-      return "https://maximethomas16-cell.github.io/fc-regny-widget-codex/selector.html";
+      return "https://maximethomas16-cell.github.io/Onzeo/selector.html";
     }
 
     if (endpoint.endsWith("/widget-data.json")) {

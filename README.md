@@ -1,6 +1,6 @@
-# FC Regny - version gratuite
+# Onzeo
 
-Version statique du projet pour diffuser au club:
+Application et widget statiques pour diffuser les infos club:
 
 - un espace public en lecture seule
 - une administration en ligne via Supabase
@@ -35,7 +35,7 @@ Pour la vraie version gratuite:
 - hebergement statique
 - Supabase pour l'admin et la source centrale
 
-Le setup complet est documente dans [docs/SUPABASE_SETUP.md](/C:/Users/maxim/Desktop/fc-regny-widget-codex/docs/SUPABASE_SETUP.md).
+Le setup complet est documente dans `docs/SUPABASE_SETUP.md`.
 
 ## Lancer en local
 

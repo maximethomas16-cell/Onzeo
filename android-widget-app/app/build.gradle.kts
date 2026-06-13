@@ -4,7 +4,7 @@ plugins {
 
 val widgetEndpoint = providers.gradleProperty("widgetEndpoint")
   .orElse(providers.environmentVariable("FC_REGNY_WIDGET_ENDPOINT"))
-  .orElse("https://maximethomas16-cell.github.io/fc-regny-widget-codex/widget-data.json")
+  .orElse("https://maximethomas16-cell.github.io/Onzeo/widget-data.json")
   .get()
 
 android {

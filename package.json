@@ -1,8 +1,8 @@
 {
-  "name": "fc-regny-widget",
+  "name": "onzeo",
   "version": "2.0.0",
   "private": true,
-  "description": "Widget public et administration sécurisée pour suivre le FC Régny.",
+  "description": "Application Onzeo avec widget public et administration securisee pour les clubs du Roannais.",
   "engines": {
     "node": "20.x"
   },
@@ -15,7 +15,7 @@
     "hash-password": "node scripts/generate_password_hash.js"
   },
   "keywords": [
-    "fc-regny",
+    "onzeo",
     "football",
     "widget",
     "admin",

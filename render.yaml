@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: fc-regny-widget
+    name: onzeo
     runtime: node
     plan: starter
     buildCommand: npm install
@@ -17,7 +17,7 @@ services:
       - key: COOKIE_SECURE
         value: "true"
       - key: DATA_DIR
-        value: /var/data/fc-regny
+        value: /var/data/onzeo
       - key: SESSION_SECRET
         generateValue: true
       - key: ADMIN_PASSWORD_HASH
