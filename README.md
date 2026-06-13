@@ -10,9 +10,12 @@ Version statique du projet pour diffuser au club:
 
 - `public/` : site statique a publier
 - `data/season.json` : jeu de donnees de base et fallback local
+- `public/data/roannais-catalog.json` : catalogue verifie des clubs Roannais D1 a D5
+- `public/data/roannais-bundles/` : un bundle JSON par equipe
 - `public/data-source.js` : couche d'acces aux donnees
 - `public/config.js` : choix du provider `local` ou `supabase`
 - `scripts/build_static_site.js` : genere `dist-static/`
+- `scripts/generate_roannais_bundles.js` : regenere les donnees verifiees depuis SportCorico
 
 ## Modes disponibles
 
@@ -51,6 +54,12 @@ npm run build:static
 Le site pret a publier est genere dans `dist-static/`.
 
 ## Validation
+
+Regenerer les donnees verifiees:
+
+```bash
+npm run generate:roannais
+```
 
 ```bash
 npm run check

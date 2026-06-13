@@ -25,6 +25,9 @@ const DEFAULT_DATA = {
   lastUpdated: null,
 };
 
+const DEFAULT_CLUB_LOGO_PATH = DEFAULT_DATA.club.logoPath;
+const DEFAULT_CLUB_NAME = DEFAULT_DATA.club.name;
+
 export const THEME_STORAGE_KEY = "fcRegnyThemeV2";
 
 export function clone(value) {
@@ -102,6 +105,69 @@ export function inferClubNameFromTeamName(teamName) {
     .replace(/\s+[ABCD]$/u, "")
     .trim();
   return prettifyTeamName(raw);
+}
+
+export function clubInitials(value) {
+  const stopWords = new Set(["DE", "DES", "DU", "LA", "LE", "LES", "ET"]);
+  const genericWords = new Set(["FOOTBALL", "CLUB", "FC", "AS", "US", "ES", "SC", "JS", "OL", "OC", "OS"]);
+  const tokens = String(value || "")
+    .trim()
+    .split(/\s+/)
+    .map((token) => token.replace(/[^A-Za-z0-9]/g, ""))
+    .filter(Boolean);
+
+  const significant = tokens.filter((token) => {
+    const upper = token.toUpperCase();
+    return !stopWords.has(upper) && !genericWords.has(upper) && !/^\d+$/.test(upper);
+  });
+
+  const source = significant.length ? significant : tokens.filter((token) => !/^\d+$/.test(token));
+  const initials = source
+    .slice(0, 2)
+    .map((token) => token.charAt(0).toUpperCase())
+    .join("");
+
+  return initials || "CL";
+}
+
+export function buildClubBadgeDataUri(clubName) {
+  const initials = clubInitials(clubName);
+  const safeLabel = String(clubName || "Club")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="${safeLabel}">
+      <defs>
+        <linearGradient id="clubBadgeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ffb347"/>
+          <stop offset="48%" stop-color="#f28c1b"/>
+          <stop offset="100%" stop-color="#183064"/>
+        </linearGradient>
+      </defs>
+      <rect x="8" y="8" width="144" height="144" rx="40" fill="url(#clubBadgeGradient)"/>
+      <rect x="16" y="16" width="128" height="128" rx="34" fill="rgba(255,255,255,0.10)" stroke="rgba(255,255,255,0.22)" stroke-width="2"/>
+      <text x="80" y="96" text-anchor="middle" font-family="Aptos, Trebuchet MS, Segoe UI, sans-serif" font-size="54" font-weight="800" fill="#fff8f1">${initials}</text>
+    </svg>
+  `.trim();
+
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+export function resolveLogoPath(logoPath, baseUrl = window.location.href) {
+  const raw = String(logoPath || "").trim();
+  if (!raw) return "";
+  try {
+    return new URL(raw, baseUrl).toString();
+  } catch {
+    return "";
+  }
+}
+
+export function getClubLogoUrl(club, baseUrl = window.location.href) {
+  const resolved = resolveLogoPath(club?.logoPath, baseUrl);
+  return resolved || buildClubBadgeDataUri(club?.name || club?.trackedTeam || "Club");
 }
 
 function normalizeStandingRow(row) {
@@ -242,6 +308,61 @@ function teamTokens(value) {
     .filter(Boolean);
 }
 
+const TEAM_STOP_TOKENS = new Set([
+  "A",
+  "AS",
+  "C",
+  "CA",
+  "CO",
+  "CS",
+  "DE",
+  "DES",
+  "DU",
+  "E",
+  "ES",
+  "ET",
+  "FC",
+  "JS",
+  "L",
+  "LA",
+  "LE",
+  "LES",
+  "O",
+  "OC",
+  "OL",
+  "OS",
+  "S",
+  "SC",
+  "ST",
+  "STE",
+  "U",
+  "US",
+]);
+
+const TEAM_GENERIC_CORE_TOKENS = new Set(["FOOT", "FOOTBALL", "SECTION", "SPORT", "SPORTIVE"]);
+
+function normalizeTeamToken(token) {
+  return String(token || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+}
+
+function buildTeamIdentity(value) {
+  const tokens = teamTokens(value).map(normalizeTeamToken).filter(Boolean);
+  const squadNumber = [...tokens].reverse().find((token) => /^\d+$/.test(token)) || "";
+  const nameTokens = tokens.filter((token) => !/^\d+$/.test(token) && !TEAM_STOP_TOKENS.has(token));
+  const coreTokens = nameTokens.filter((token) => !TEAM_GENERIC_CORE_TOKENS.has(token) && token.length >= 2);
+  const acronym = nameTokens.length >= 2 ? nameTokens.map((token) => token.charAt(0)).join("") : nameTokens[0] || "";
+
+  return {
+    acronym,
+    coreTokens,
+    squadNumber,
+    tokens,
+  };
+}
+
 export function teamSimilarityScore(left, right) {
   const leftNorm = normalizeTeamName(left);
   const rightNorm = normalizeTeamName(right);
@@ -251,36 +372,56 @@ export function teamSimilarityScore(left, right) {
     return 85 - Math.abs(leftNorm.length - rightNorm.length);
   }
 
-  const leftTokens = teamTokens(left);
-  const rightTokens = teamTokens(right);
+  const leftIdentity = buildTeamIdentity(left);
+  const rightIdentity = buildTeamIdentity(right);
   let score = 0;
+  let matchedCoreTokenCount = 0;
 
-  leftTokens.forEach((leftToken) => {
-    if (rightTokens.includes(leftToken)) {
-      score += leftToken.length >= 4 ? 12 : 5;
+  leftIdentity.coreTokens.forEach((leftToken) => {
+    if (rightIdentity.coreTokens.includes(leftToken)) {
+      matchedCoreTokenCount += 1;
+      score += leftToken.length >= 4 ? 14 : 6;
       return;
     }
 
-    const closeToken = rightTokens.find(
+    const closeToken = rightIdentity.coreTokens.find(
       (rightToken) =>
         (leftToken.length >= 4 || rightToken.length >= 4) &&
         (leftToken.startsWith(rightToken) || rightToken.startsWith(leftToken)),
     );
 
-    if (closeToken) score += 8;
+    if (closeToken) {
+      matchedCoreTokenCount += 1;
+      score += 10;
+    }
   });
 
-  const leftDigits = leftTokens.filter((token) => /^\d+$/.test(token)).join("-");
-  const rightDigits = rightTokens.filter((token) => /^\d+$/.test(token)).join("-");
-  if (leftDigits && rightDigits && leftDigits === rightDigits) {
-    score += 6;
+  const acronymMatches =
+    (leftIdentity.acronym && leftIdentity.acronym === rightIdentity.acronym && leftIdentity.acronym.length >= 2) ||
+    leftIdentity.coreTokens.includes(rightIdentity.acronym) ||
+    rightIdentity.coreTokens.includes(leftIdentity.acronym);
+
+  if (acronymMatches) {
+    score += 20;
+  }
+
+  if (leftIdentity.squadNumber && rightIdentity.squadNumber) {
+    if (leftIdentity.squadNumber === rightIdentity.squadNumber) {
+      score += 8;
+    } else {
+      score -= 12;
+    }
+  }
+
+  if (!matchedCoreTokenCount && !acronymMatches) {
+    return Math.max(score, 0);
   }
 
   return score;
 }
 
-function isSameTeam(left, right) {
-  return teamSimilarityScore(left, right) >= 12;
+export function isSameTeam(left, right) {
+  return teamSimilarityScore(left, right) >= 18;
 }
 
 export function findTeamStanding(standingsTable, teamName) {
@@ -295,7 +436,7 @@ export function findTeamStanding(standingsTable, teamName) {
     }
   });
 
-  return bestScore >= 12 ? bestRow : null;
+  return bestScore >= 18 ? bestRow : null;
 }
 
 export function getTrackedStanding(standingsTable, trackedTeam) {
@@ -359,14 +500,29 @@ export function applyTrackedTeamSelection(seasonData, options = {}) {
   const next = clone(seasonData || DEFAULT_DATA);
   const trackedTeam = String(options.trackedTeam || next.club?.trackedTeam || "").trim();
   const inferredClubName = inferClubNameFromTeamName(trackedTeam);
+  const nextClubName = String(options.clubName || inferredClubName || next.club?.name || "").trim() || next.club?.name;
+  const explicitLogoPath = Object.prototype.hasOwnProperty.call(options, "logoPath");
+  let logoPath = String(explicitLogoPath ? options.logoPath : next.club?.logoPath || "").trim();
+  const selectedClubIsDefault = normalizeTeamName(nextClubName) === normalizeTeamName(DEFAULT_CLUB_NAME);
+
+  if (!selectedClubIsDefault && logoPath === DEFAULT_CLUB_LOGO_PATH) {
+    logoPath = "";
+  } else if (!explicitLogoPath) {
+    if (selectedClubIsDefault) {
+      logoPath = DEFAULT_CLUB_LOGO_PATH;
+    } else if (String(next.club?.logoPath || "").includes("logo-fc-regny")) {
+      logoPath = "";
+    }
+  }
 
   next.club = {
     ...next.club,
     trackedTeam,
-    name: String(options.clubName || inferredClubName || next.club?.name || "").trim() || next.club?.name,
+    name: nextClubName,
     fullName:
       String(options.fullName || next.club?.fullName || "").trim() ||
       `Football Club ${inferredClubName}`.trim(),
+    logoPath,
   };
 
   next.season = {
@@ -549,6 +705,10 @@ export function getStandingsFocusRows(standingsTable, trackedTeam, radius = 2) {
 export function buildStandingSnapshot(seasonData) {
   const summary = seasonData.summary || {};
   const standing = getTrackedStanding(seasonData.standingsTable, seasonData.club.trackedTeam);
+  const rows = [...(seasonData.standingsTable || [])].map((row) => ({
+    ...row,
+    tracked: isSameTeam(row.team, seasonData.club.trackedTeam),
+  }));
   return {
     team: seasonData.club.trackedTeam,
     clubName: seasonData.club.name,
@@ -560,6 +720,7 @@ export function buildStandingSnapshot(seasonData) {
     division: normalizeDivision(seasonData.season.division) || inferDivisionFromCompetition(seasonData.season.competition),
     competition: seasonData.season.competition || "",
     focusRows: getStandingsFocusRows(seasonData.standingsTable, seasonData.club.trackedTeam),
+    rows,
   };
 }
 
@@ -571,7 +732,7 @@ export function buildWidgetPayloadV2(seasonData) {
 
   if (!nextMatch && !lastMatch) {
     return {
-      widgetVersion: 2,
+      widgetVersion: 3,
       generatedAt: new Date().toISOString(),
       refreshAfterSeconds: 1800,
       mode: "empty",
@@ -595,7 +756,7 @@ export function buildWidgetPayloadV2(seasonData) {
   }
 
   return {
-    widgetVersion: 2,
+    widgetVersion: 3,
     generatedAt: new Date().toISOString(),
     refreshAfterSeconds: 1800,
     mode: "split",

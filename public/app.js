@@ -7,17 +7,17 @@ import {
   filterMatchesForTeam,
   findTeamStanding,
   formatShortDate,
+  getClubLogoUrl,
   getLastFinishedMatch,
   getNextMatch,
+  isSameTeam,
   isFinished,
   matchSort,
   monthKey,
   normalizeSeasonData,
-  normalizeTeamName,
   resultFor,
-  teamSimilarityScore,
-} from "./shared.js?v=roannais-3";
-import { getDataSourceStatus, loadPublicSeasonData } from "./data-source.js?v=roannais-3";
+} from "./shared.js?v=roannais-4";
+import { getDataSourceStatus, loadPublicSeasonData } from "./data-source.js?v=roannais-4";
 
 const els = {
   lastMatchesBlock: document.getElementById("lastMatchesBlock"),
@@ -28,6 +28,9 @@ const els = {
   seasonCalendar: document.getElementById("seasonCalendar"),
   standingsTable: document.getElementById("standingsTable"),
   calendarFilter: document.getElementById("calendarFilter"),
+  publicBrandCrest: document.getElementById("publicBrandCrest"),
+  publicBrandTitle: document.getElementById("publicBrandTitle"),
+  publicBrandLede: document.getElementById("publicBrandLede"),
   tabButtons: [...document.querySelectorAll(".tab-btn")],
   tabPanels: [...document.querySelectorAll(".tab-panel")],
   toast: document.getElementById("toast"),
@@ -55,7 +58,7 @@ function getLastMatches(limit = 5) {
 }
 
 function isTrackedName(teamName) {
-  return teamSimilarityScore(teamName, state.club.trackedTeam) >= 12;
+  return isSameTeam(teamName, state.club.trackedTeam);
 }
 
 function renderTeamLabelWithRank(teamName) {
@@ -65,7 +68,15 @@ function renderTeamLabelWithRank(teamName) {
 }
 
 function renderHeaderMeta() {
-  els.summaryTitle.textContent = `${state.club.trackedTeam} · ${state.season.label}`;
+  const clubName = state.club.name || state.club.trackedTeam || "Club";
+  const seasonTeam = state.season.team || state.club.trackedTeam || "Equipe";
+
+  document.title = "Onzeo - Espace public";
+  els.publicBrandCrest.src = "./assets/logo-onzeo.png";
+  els.publicBrandCrest.alt = "Logo Onzeo";
+  els.publicBrandTitle.textContent = "Onzeo";
+  els.publicBrandLede.textContent = `${clubName} - ${seasonTeam} en lecture simple.`;
+  els.summaryTitle.textContent = `${state.club.trackedTeam} - ${state.season.label}`;
   els.seasonPills.innerHTML = `
     <span class="mini-pill">${escapeHtml(state.season.division || "D?")}</span>
     <span class="mini-pill">${escapeHtml(state.season.competition || "Competition")}</span>
@@ -99,12 +110,14 @@ function renderCompactTeamsLine(card, showScore) {
 
 function renderDashboardMatch(card, emptyLabel) {
   if (!card) {
+    const emptyMessage =
+      emptyLabel === "Prochain match" ? "En attente de calendrier officiel." : "Information non disponible pour le moment.";
     return `
       <article class="widget-split-block">
         <div class="widget-split-head">
           <p class="eyebrow">${escapeHtml(emptyLabel)}</p>
         </div>
-        <p class="widget-mini-copy">Information non disponible pour le moment.</p>
+        <p class="widget-mini-copy">${escapeHtml(emptyMessage)}</p>
       </article>
     `;
   }
@@ -274,7 +287,6 @@ function renderStandings() {
     return;
   }
 
-  const tracked = normalizeTeamName(state.club.trackedTeam);
   const standing = buildStandingSnapshot(state);
 
   els.standingsTable.innerHTML = `
@@ -289,7 +301,7 @@ function renderStandings() {
       <div class="standings-mobile">
         ${state.standingsTable
           .map((row) => {
-            const highlight = normalizeTeamName(row.team).includes(tracked) || tracked.includes(normalizeTeamName(row.team));
+            const highlight = isSameTeam(row.team, state.club.trackedTeam);
             return `
               <article class="standings-mobile-card ${highlight ? "highlight" : ""}">
                 <div class="standings-mobile-head">
@@ -328,7 +340,7 @@ function renderStandings() {
           <tbody>
             ${state.standingsTable
               .map((row) => {
-                const highlight = normalizeTeamName(row.team).includes(tracked) || tracked.includes(normalizeTeamName(row.team));
+                const highlight = isSameTeam(row.team, state.club.trackedTeam);
                 return `
                   <tr class="${highlight ? "highlight" : ""}">
                     <td>${escapeHtml(row.rank ?? "—")}</td>

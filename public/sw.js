@@ -1,19 +1,25 @@
-const CACHE_NAME = "fc-regny-shell-v14";
+const CACHE_NAME = "onzeo-shell-v27";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./admin.html",
+  "./selector.html",
   "./widget.html",
-  "./styles.css?v=roannais-3",
-  "./app.js?v=roannais-3",
-  "./admin.js?v=roannais-3",
-  "./widget.js?v=roannais-3",
-  "./shared.js?v=roannais-3",
-  "./data-source.js?v=roannais-3",
-  "./config.js?v=roannais-3",
+  "./styles.css?v=free-static-3",
+  "./app.js?v=roannais-5",
+  "./admin.js?v=roannais-6",
+  "./selector.js?v=roannais-1",
+  "./widget.js?v=widget-sizes-6",
+  "./shared.js?v=roannais-4",
+  "./data-source.js?v=roannais-4",
+  "./config.js?v=roannais-4",
   "./manifest.webmanifest",
   "./assets/logo-fc-regny.png",
+  "./assets/logo-onzeo.png",
+  "./assets/icon-onzeo.png",
+  "./assets/icon-onzeo-192.png",
   "./data/season.json",
+  "./data/roannais-catalog.json",
 ];
 
 self.addEventListener("install", (event) => {
@@ -38,7 +44,11 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  const isFreshData = url.pathname.endsWith("/data/season.json") || url.pathname.endsWith("/config.js");
+  const isFreshData =
+    url.pathname.endsWith("/data/season.json") ||
+    url.pathname.endsWith("/data/roannais-catalog.json") ||
+    url.pathname.includes("/data/roannais-bundles/") ||
+    url.pathname.endsWith("/config.js");
   if (isFreshData) {
     event.respondWith(
       fetch(request)

@@ -25,3 +25,7 @@ android-widget-app/local.properties
 
 # Runtime data
 data/backups/
+
+# Local debug captures
+tmp-*.png
+tmp-*.xml

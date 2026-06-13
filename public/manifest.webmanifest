@@ -1,7 +1,7 @@
 {
-  "name": "FC Regny Matchday",
-  "short_name": "FC Regny",
-  "description": "Vue mobile du calendrier, des resultats et du widget matchday du FC Regny.",
+  "name": "Onzeo",
+  "short_name": "Onzeo",
+  "description": "Application mobile Onzeo pour suivre calendrier, resultats et widget du club choisi.",
   "start_url": "./widget.html",
   "scope": "./",
   "display": "standalone",
@@ -9,12 +9,12 @@
   "theme_color": "#f28c1b",
   "icons": [
     {
-      "src": "./assets/logo-fc-regny.png",
+      "src": "./assets/icon-onzeo-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "./assets/logo-fc-regny.png",
+      "src": "./assets/icon-onzeo.png",
       "sizes": "512x512",
       "type": "image/png"
     }

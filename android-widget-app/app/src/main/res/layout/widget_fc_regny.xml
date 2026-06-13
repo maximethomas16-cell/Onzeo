@@ -5,7 +5,7 @@
   android:layout_height="match_parent"
   android:background="@drawable/bg_widget"
   android:orientation="vertical"
-  android:padding="14dp">
+  android:padding="12dp">
 
   <LinearLayout
     android:layout_width="match_parent"
@@ -14,144 +14,112 @@
     android:orientation="horizontal">
 
     <ImageView
-      android:layout_width="28dp"
-      android:layout_height="28dp"
+      android:id="@+id/widgetClubBadge"
+      android:layout_width="24dp"
+      android:layout_height="24dp"
       android:contentDescription="@string/widget_label"
       android:src="@drawable/ic_club_badge" />
 
-    <LinearLayout
+    <TextView
+      android:id="@+id/widgetClubName"
       android:layout_width="0dp"
       android:layout_height="wrap_content"
       android:layout_marginStart="10dp"
       android:layout_weight="1"
-      android:orientation="vertical">
+      android:ellipsize="end"
+      android:maxLines="1"
+      android:text="@string/widget_label"
+      android:textColor="@android:color/white"
+      android:textSize="14sp"
+      android:textStyle="bold" />
 
-      <TextView
-        android:id="@+id/widgetClubName"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/widget_label"
-        android:textColor="@android:color/white"
-        android:textSize="16sp"
-        android:textStyle="bold" />
+    <TextView
+      android:id="@+id/widgetSeasonTeam"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:background="@drawable/bg_widget_action"
+      android:ellipsize="end"
+      android:maxLines="1"
+      android:paddingLeft="8dp"
+      android:paddingTop="5dp"
+      android:paddingRight="8dp"
+      android:paddingBottom="5dp"
+      android:text="@string/widget_subtitle"
+      android:textColor="@android:color/white"
+      android:textSize="9sp"
+      android:textStyle="bold" />
+  </LinearLayout>
 
-      <TextView
-        android:id="@+id/widgetSeasonTeam"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/widget_subtitle"
-        android:textColor="#CCFFFFFF"
-        android:textSize="12sp" />
-    </LinearLayout>
+  <TextView
+    android:id="@+id/normalLineOne"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="10dp"
+    android:background="@drawable/bg_widget_section"
+    android:ellipsize="end"
+    android:maxLines="1"
+    android:padding="10dp"
+    android:textColor="@android:color/white"
+    android:textSize="12sp"
+    android:textStyle="bold" />
+
+  <TextView
+    android:id="@+id/normalLineTwo"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="6dp"
+    android:background="@drawable/bg_widget_section"
+    android:ellipsize="end"
+    android:maxLines="1"
+    android:padding="10dp"
+    android:textColor="@android:color/white"
+    android:textSize="12sp"
+    android:textStyle="bold" />
+
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="8dp"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <TextView
+      android:id="@+id/widgetFooter"
+      android:layout_width="0dp"
+      android:layout_height="wrap_content"
+      android:layout_weight="1"
+      android:ellipsize="end"
+      android:maxLines="1"
+      android:textColor="#CCFFFFFF"
+      android:textSize="10sp" />
+
+    <TextView
+      android:id="@+id/widgetAdminAction"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:background="@drawable/bg_widget_action"
+      android:paddingLeft="8dp"
+      android:paddingTop="5dp"
+      android:paddingRight="8dp"
+      android:paddingBottom="5dp"
+      android:text="@string/widget_admin"
+      android:textColor="@android:color/white"
+      android:textSize="10sp"
+      android:textStyle="bold" />
 
     <TextView
       android:id="@+id/widgetRefreshAction"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
+      android:layout_marginStart="6dp"
       android:background="@drawable/bg_widget_action"
-      android:paddingLeft="10dp"
-      android:paddingTop="6dp"
-      android:paddingRight="10dp"
-      android:paddingBottom="6dp"
+      android:paddingLeft="8dp"
+      android:paddingTop="5dp"
+      android:paddingRight="8dp"
+      android:paddingBottom="5dp"
       android:text="@string/widget_refresh"
       android:textColor="@android:color/white"
-      android:textSize="11sp"
+      android:textSize="10sp"
       android:textStyle="bold" />
   </LinearLayout>
-
-  <LinearLayout
-    android:id="@+id/lastMatchBlock"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginTop="12dp"
-    android:background="@drawable/bg_widget_section"
-    android:orientation="vertical"
-    android:padding="12dp">
-
-    <TextView
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:text="@string/widget_last_match"
-      android:textColor="#FFF3D7"
-      android:textSize="11sp"
-      android:textStyle="bold" />
-
-    <TextView
-      android:id="@+id/lastMatchDate"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="6dp"
-      android:textColor="@android:color/white"
-      android:textSize="13sp" />
-
-    <TextView
-      android:id="@+id/lastMatchTeams"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="6dp"
-      android:textColor="@android:color/white"
-      android:textSize="14sp"
-      android:textStyle="bold" />
-
-    <TextView
-      android:id="@+id/lastMatchResult"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="4dp"
-      android:textColor="#FFF3D7"
-      android:textSize="16sp"
-      android:textStyle="bold" />
-  </LinearLayout>
-
-  <LinearLayout
-    android:id="@+id/nextMatchBlock"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginTop="10dp"
-    android:background="@drawable/bg_widget_section"
-    android:orientation="vertical"
-    android:padding="12dp">
-
-    <TextView
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:text="@string/widget_next_match"
-      android:textColor="#FFF3D7"
-      android:textSize="11sp"
-      android:textStyle="bold" />
-
-    <TextView
-      android:id="@+id/nextMatchDateTime"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="6dp"
-      android:textColor="@android:color/white"
-      android:textSize="14sp"
-      android:textStyle="bold" />
-
-    <TextView
-      android:id="@+id/nextMatchVenue"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="4dp"
-      android:textColor="#CCFFFFFF"
-      android:textSize="13sp" />
-
-    <TextView
-      android:id="@+id/nextMatchTeams"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="6dp"
-      android:textColor="@android:color/white"
-      android:textSize="14sp"
-      android:textStyle="bold" />
-  </LinearLayout>
-
-  <TextView
-    android:id="@+id/widgetFooter"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginTop="10dp"
-    android:textColor="#CCFFFFFF"
-    android:textSize="11sp" />
 </LinearLayout>

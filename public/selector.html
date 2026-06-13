@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Onzeo - Choisir le club</title>
+    <meta name="description" content="Selection publique du club suivi dans l'application Android Onzeo." />
+    <meta name="theme-color" content="#f28c1b" />
+    <link rel="stylesheet" href="./styles.css?v=free-static-3" />
+  </head>
+  <body data-theme="dark">
+    <div class="page-shell public-shell">
+      <header class="topbar">
+        <div class="brand">
+          <img class="crest" id="selectorBrandCrest" src="./assets/logo-onzeo.png" alt="Logo Onzeo" />
+          <div class="brand-copy compact-copy">
+            <p class="eyebrow">Selection publique</p>
+            <h1 id="selectorBrandTitle">Onzeo</h1>
+            <p class="lede" id="selectorBrandLede">Cette action met a jour l'application et le widget sur ce telephone, sans passer par l'admin.</p>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <div class="theme-switch" role="group" aria-label="Choix du theme">
+            <button class="theme-btn active" type="button" data-theme-option="dark">Sombre</button>
+            <button class="theme-btn" type="button" data-theme-option="light">Clair</button>
+          </div>
+        </div>
+      </header>
+
+      <main class="content-stack">
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Roannais</p>
+              <h2>Changer d'equipe</h2>
+            </div>
+          </div>
+          <p class="panel-copy">Choisis la division, la poule puis l'equipe. Le club charge remplacera immediatement les infos affichees dans l'APK et le widget.</p>
+
+          <div class="grid three-col">
+            <label class="field">
+              <span>Division</span>
+              <select id="selectorDivision">
+                <option value="D1">D1</option>
+                <option value="D2">D2</option>
+                <option value="D3">D3</option>
+                <option value="D4">D4</option>
+                <option value="D5">D5</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Poule</span>
+              <select id="selectorGroup"></select>
+            </label>
+            <label class="field">
+              <span>Equipe</span>
+              <select id="selectorTeam"></select>
+            </label>
+          </div>
+
+          <div class="actions">
+            <button class="btn" id="selectorApplyBtn" type="button">Valider ce club</button>
+          </div>
+          <p class="feedback" id="selectorFeedback"></p>
+        </article>
+      </main>
+    </div>
+
+    <div class="toast" id="selectorToast" role="status" aria-live="polite"></div>
+    <script type="module" src="./selector.js?v=roannais-1"></script>
+  </body>
+</html>

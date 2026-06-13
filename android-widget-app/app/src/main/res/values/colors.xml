@@ -7,5 +7,10 @@
   <color name="accentOrangeDark">#D86C00</color>
   <color name="textPrimary">#FFF8F1</color>
   <color name="textSecondary">#C9D5E8</color>
+  <color name="inputBackground">#FFFFFFFF</color>
+  <color name="inputStroke">#D5DCE8</color>
+  <color name="inputText">#101010</color>
+  <color name="inputHint">#7A7A7A</color>
+  <color name="onzeoIconBackground">#032B1D</color>
   <color name="white">#FFFFFFFF</color>
 </resources>

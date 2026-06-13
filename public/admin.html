@@ -3,20 +3,20 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>FC Regny - Administration</title>
-    <meta name="description" content="Administration securisee du widget FC Regny." />
+    <title>Onzeo - Administration</title>
+    <meta name="description" content="Administration securisee de l'application Onzeo." />
     <meta name="theme-color" content="#f28c1b" />
-    <link rel="stylesheet" href="./styles.css?v=free-static-1" />
+    <link rel="stylesheet" href="./styles.css?v=free-static-3" />
   </head>
   <body data-theme="dark">
     <div class="page-shell">
       <header class="topbar">
         <div class="brand">
-          <img class="crest" src="./assets/logo-fc-regny.png" alt="Logo FC Regny" />
+          <img class="crest" id="adminBrandCrest" src="./assets/logo-onzeo.png" alt="Logo Onzeo" />
           <div>
             <p class="eyebrow">Administration securisee</p>
-            <h1>FC Regny Admin</h1>
-            <p class="lede">Version club: choix simple de l'equipe, import des matchs et publication widget-ready.</p>
+            <h1 id="adminBrandTitle">Onzeo Admin</h1>
+            <p class="lede" id="adminBrandLede">Version club: choix simple de l'equipe, import des matchs et publication widget-ready.</p>
           </div>
         </div>
         <div class="topbar-actions">
@@ -80,7 +80,7 @@
             <p class="panel-copy">
               Importe le classement et les rencontres de la poule, puis choisis la division D1 a D5 et l'equipe a suivre.
             </p>
-            <div class="grid two-col">
+            <div class="grid three-col">
               <label class="field">
                 <span>Division</span>
                 <select id="divisionSelect">
@@ -92,13 +92,18 @@
                 </select>
               </label>
               <label class="field">
+                <span>Poule</span>
+                <select id="groupSelect"></select>
+              </label>
+              <label class="field">
                 <span>Equipe du widget</span>
                 <select id="trackedTeamSelect"></select>
               </label>
             </div>
             <div class="actions">
-              <button class="btn" id="applyTrackedTeamBtn" type="button">Appliquer la selection</button>
+              <button class="btn" id="applyTrackedTeamBtn" type="button">Valider et charger le club</button>
             </div>
+            <p class="feedback" id="clubSelectionFeedback"></p>
           </article>
 
           <article class="panel">
@@ -136,10 +141,6 @@
               <label class="field">
                 <span>Lieu par defaut</span>
                 <input id="venueInput" type="text" />
-              </label>
-              <label class="field">
-                <span>Source affichee</span>
-                <input id="sourceInput" type="text" />
               </label>
             </div>
           </article>
@@ -212,6 +213,6 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script type="module" src="./admin.js?v=roannais-3"></script>
+    <script type="module" src="./admin.js?v=roannais-6"></script>
   </body>
 </html>

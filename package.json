@@ -11,6 +11,7 @@
     "serve": "node server.js",
     "start": "node server.js",
     "check": "node scripts/validate_project.js",
+    "generate:roannais": "node scripts/generate_roannais_bundles.js",
     "hash-password": "node scripts/generate_password_hash.js"
   },
   "keywords": [

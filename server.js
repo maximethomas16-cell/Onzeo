@@ -224,6 +224,23 @@ function findTeamStanding(standingsTable, teamName) {
   return bestScore >= 12 ? bestRow : null;
 }
 
+function getTrackedStanding(standingsTable, trackedTeam) {
+  return findTeamStanding(standingsTable || [], trackedTeam);
+}
+
+function isSameTeam(left, right) {
+  return teamSimilarityScore(left, right) >= 12;
+}
+
+function isTrackedTeamMatch(match, trackedTeam) {
+  if (!trackedTeam) return true;
+  return isSameTeam(match?.homeTeam, trackedTeam) || isSameTeam(match?.awayTeam, trackedTeam);
+}
+
+function filterMatchesForTeam(matches, trackedTeam) {
+  return [...(matches || [])].filter((match) => isTrackedTeamMatch(match, trackedTeam)).sort(matchSort);
+}
+
 function getNextMatch(matches) {
   const now = Date.now();
   return [...matches].sort(matchSort).find((match) => !isFinished(match) && new Date(match.date).getTime() >= now);
@@ -305,6 +322,52 @@ function buildWidgetMatchCard(match, seasonData, title) {
   };
 }
 
+function getStandingsFocusRows(standingsTable, trackedTeam, radius = 2) {
+  const rows = [...(standingsTable || [])];
+  if (!rows.length) return [];
+
+  const standing = getTrackedStanding(rows, trackedTeam);
+  if (!standing) {
+    return rows.slice(0, Math.min(rows.length, radius * 2 + 1)).map((row) => ({
+      ...row,
+      tracked: false,
+    }));
+  }
+
+  const index = rows.findIndex((row) => row.rank === standing.rank && teamSimilarityScore(row.team, standing.team) >= 12);
+  const safeIndex = index >= 0 ? index : Math.max(0, (standing.rank || 1) - 1);
+  const start = Math.max(0, safeIndex - radius);
+  const end = Math.min(rows.length, safeIndex + radius + 1);
+
+  return rows.slice(start, end).map((row) => ({
+    ...row,
+    tracked: teamSimilarityScore(row.team, trackedTeam) >= 12,
+  }));
+}
+
+function buildStandingSnapshot(seasonData) {
+  const summary = seasonData.summary || {};
+  const standing = getTrackedStanding(seasonData.standingsTable, seasonData.club.trackedTeam);
+  const rows = [...(seasonData.standingsTable || [])].map((row) => ({
+    ...row,
+    tracked: teamSimilarityScore(row.team, seasonData.club.trackedTeam) >= 12,
+  }));
+
+  return {
+    team: seasonData.club.trackedTeam,
+    clubName: seasonData.club.name,
+    rank: standing?.rank ?? summary.rank ?? null,
+    points: standing?.points ?? summary.points ?? null,
+    played: standing?.played ?? summary.played ?? null,
+    goalDifference: standing?.goalDifference ?? summary.goalDifference ?? null,
+    totalTeams: seasonData.standingsTable.length || null,
+    division: seasonData.season.division || "",
+    competition: seasonData.season.competition || "",
+    focusRows: getStandingsFocusRows(seasonData.standingsTable, seasonData.club.trackedTeam),
+    rows,
+  };
+}
+
 function buildWidgetPayload(seasonData) {
   const nextMatch = getNextMatch(seasonData.matches);
   const fallbackMatch = getLastFinishedMatch(seasonData.matches);
@@ -380,12 +443,14 @@ function readSeasonData() {
 }
 
 function buildWidgetPayloadV2(seasonData) {
-  const nextMatch = getNextMatch(seasonData.matches);
-  const lastMatch = getLastFinishedMatch(seasonData.matches);
+  const trackedMatches = filterMatchesForTeam(seasonData.matches, seasonData.club.trackedTeam);
+  const nextMatch = getNextMatch(trackedMatches);
+  const lastMatch = getLastFinishedMatch(trackedMatches);
+  const standing = buildStandingSnapshot(seasonData);
 
   if (!nextMatch && !lastMatch) {
     return {
-      widgetVersion: 2,
+      widgetVersion: 3,
       generatedAt: new Date().toISOString(),
       refreshAfterSeconds: 1800,
       mode: "empty",
@@ -397,6 +462,7 @@ function buildWidgetPayloadV2(seasonData) {
         label: seasonData.season.label,
         team: seasonData.season.team,
       },
+      standing,
       lastMatch: null,
       nextMatch: null,
       deepLinks: {
@@ -407,7 +473,7 @@ function buildWidgetPayloadV2(seasonData) {
   }
 
   return {
-    widgetVersion: 2,
+    widgetVersion: 3,
     generatedAt: new Date().toISOString(),
     refreshAfterSeconds: 1800,
     mode: "split",
@@ -423,6 +489,7 @@ function buildWidgetPayloadV2(seasonData) {
       competition: seasonData.season.competition,
       district: seasonData.season.district,
     },
+    standing,
     lastMatch: buildWidgetMatchCard(lastMatch, seasonData, "Dernier match"),
     nextMatch: buildWidgetMatchCard(nextMatch, seasonData, "Prochain match"),
     deepLinks: {

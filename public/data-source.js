@@ -1,5 +1,5 @@
-import { clone, normalizeSeasonData } from "./shared.js?v=roannais-3";
-import { APP_CONFIG } from "./config.js?v=roannais-3";
+import { clone, normalizeSeasonData } from "./shared.js?v=roannais-4";
+import { APP_CONFIG } from "./config.js?v=roannais-4";
 
 const DEFAULT_CONFIG = {
   provider: "local",
@@ -13,6 +13,7 @@ const DEFAULT_CONFIG = {
 
 const LOCAL_DATA_STORAGE_KEY = "fcRegnySeasonLocalV1";
 const SESSION_STORAGE_KEY = "fcRegnySupabaseSessionV1";
+const CLUB_CATALOG_FILE = "./data/roannais-catalog.json";
 
 const config = {
   ...DEFAULT_CONFIG,
@@ -29,6 +30,10 @@ function hasSupabaseConfig() {
 
 function getSeasonFileUrl() {
   return new URL(config.seasonFile, window.location.href).toString();
+}
+
+function getClubCatalogUrl() {
+  return new URL(CLUB_CATALOG_FILE, window.location.href).toString();
 }
 
 function getSupabaseBaseUrl(pathname) {
@@ -232,6 +237,17 @@ async function saveSupabaseSeason(data) {
 
 export function getRuntimeConfig() {
   return clone(config);
+}
+
+export async function loadClubCatalog() {
+  const response = await fetch(getClubCatalogUrl(), { cache: "no-store" });
+  const payload = await readJsonResponse(response);
+  return Array.isArray(payload?.entries) ? payload.entries : [];
+}
+
+export async function loadClubBundle(bundlePath) {
+  const response = await fetch(new URL(bundlePath, window.location.href).toString(), { cache: "no-store" });
+  return normalizeSeasonData(await readJsonResponse(response));
 }
 
 export function getDataSourceStatus() {
